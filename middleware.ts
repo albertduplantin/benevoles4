@@ -1,50 +1,45 @@
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 
-/**
- * Middleware pour protéger les routes et gérer les profils incomplets
- * 
- * Ce middleware :
- * 1. Laisse passer les routes publiques (auth, api, static)
- * 2. Pour les routes dashboard, vérifie si l'utilisateur a un profil complet via un cookie
- * 3. Redirige vers /auth/complete-profile si nécessaire
- */
-export function middleware(request: NextRequest) {
+// Routes publiques accessibles sans authentification
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/auth/login(.*)',
+  '/auth/register(.*)',
+  '/auth/reset-password(.*)',
+  '/auth/complete-profile(.*)',
+  '/legal(.*)',
+  '/api/webhooks/(.*)', // Pour les webhooks Clerk
+]);
+
+export default clerkMiddleware(async (auth, request) => {
+  const { userId } = await auth();
   const { pathname } = request.nextUrl;
-  
-  // Routes publiques - toujours autorisées
-  const publicRoutes = [
-    '/auth/login',
-    '/auth/register',
-    '/auth/reset-password',
-    '/auth/complete-profile', // Important: ne pas rediriger depuis cette page
-    '/legal',
-  ];
-  
-  // Vérifier si c'est une route publique
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-  if (isPublicRoute) {
-    return NextResponse.next();
+
+  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
+  if (!userId && !isPublicRoute(request)) {
+    const signInUrl = new URL('/auth/login', request.url);
+    signInUrl.searchParams.set('redirect_url', pathname);
+    return NextResponse.redirect(signInUrl);
   }
-  
-  // Si c'est une route dashboard, on laisse le composant gérer la redirection
-  // car il a accès aux données Firestore complètes
-  // Le middleware ne peut pas vérifier facilement les données Firestore
-  // La protection est donc faite au niveau du composant (voir missions/page.tsx ligne 181-183)
-  
+
+  // Si l'utilisateur est connecté et essaie d'accéder aux pages auth, rediriger vers dashboard
+  if (userId && pathname.startsWith('/auth/') && !pathname.startsWith('/auth/complete-profile')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public files (images, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
-

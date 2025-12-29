@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
+import { frFR } from '@clerk/localizations';
 import { QueryProvider } from '@/components/providers/query-provider';
-import { AuthProvider } from '@/components/providers/auth-provider';
 import { InstallPWAButton } from '@/components/features/pwa/install-pwa-button';
 import { NetworkStatus } from '@/components/features/pwa/network-status';
 import { ServiceWorkerRegister } from '@/components/features/pwa/service-worker-register';
@@ -33,18 +34,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
-      <body className={inter.className}>
-        <QueryProvider>
-          <AuthProvider>
+    <ClerkProvider localization={frFR}>
+      <html lang="fr">
+        <body className={inter.className}>
+          <QueryProvider>
             <ServiceWorkerRegister />
             {children}
             <InstallPWAButton />
             <NetworkStatus />
             <Toaster position="top-right" richColors />
-          </AuthProvider>
-        </QueryProvider>
-      </body>
-    </html>
+          </QueryProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
