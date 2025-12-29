@@ -249,3 +249,5 @@ Cette fonctionnalité **autonomise les responsables de catégorie** en leur donn
 
 
 
+
+

@@ -356,3 +356,5 @@ RESEND_API_KEY=re_xxxxxxxxxxxxx
 **Date** : 15 Novembre 2025  
 **Version** : 1.0
 
+
+
