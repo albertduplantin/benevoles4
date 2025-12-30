@@ -151,7 +151,7 @@ export default function PreferencesPage() {
           // Migration : si ancien format (availableDates), convertir en availableDateSlots
           if (prefs.availableDates && prefs.availableDates.length > 0 && !prefs.availableDateSlots) {
             const converted: Record<string, ('morning' | 'afternoon' | 'evening')[]> = {};
-            prefs.availableDates.forEach(date => {
+            prefs.availableDates.forEach((date: string) => {
               converted[date] = ['morning', 'afternoon', 'evening']; // Toute la journée par défaut
             });
             setAvailableDateSlots(converted);

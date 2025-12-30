@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
-import { isProfileComplete } from '@/lib/firebase/users';
 import { Header } from '@/components/layouts/header';
 import { SupportBanner } from '@/components/features/support/support-banner';
 
@@ -12,7 +11,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isProfileComplete } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -21,14 +20,14 @@ export default function DashboardLayout({
     if (!loading && !user) {
       // Pas connecté : rediriger vers login
       router.push('/auth/login');
-    } else if (!loading && user && !isProfileComplete(user)) {
+    } else if (!loading && user && !isProfileComplete) {
       // Profil incomplet : rediriger vers complete-profile
       // Sauf si on est déjà sur cette page
       if (pathname !== '/auth/complete-profile') {
         router.push('/auth/complete-profile');
       }
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, isProfileComplete, router, pathname]);
 
   // Afficher un loader pendant la vérification
   if (loading || !user) {
@@ -40,7 +39,7 @@ export default function DashboardLayout({
   }
 
   // Si le profil est incomplet, ne rien afficher (la redirection est en cours)
-  if (!isProfileComplete(user)) {
+  if (!isProfileComplete) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Vérification du profil...</p>
