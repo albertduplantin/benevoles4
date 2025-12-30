@@ -24,7 +24,10 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   // Si l'utilisateur est connecté et essaie d'accéder aux pages auth, rediriger vers dashboard
-  if (userId && pathname.startsWith('/auth/') && !pathname.startsWith('/auth/complete-profile')) {
+  // SAUF pour complete-profile et les callbacks SSO de Clerk
+  if (userId && pathname.startsWith('/auth/') &&
+      !pathname.startsWith('/auth/complete-profile') &&
+      !pathname.includes('/sso-callback')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
