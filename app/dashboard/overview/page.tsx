@@ -273,8 +273,8 @@ export default function DashboardOverviewPage() {
   
   // Convertir les IDs Firestore en valeurs textuelles pour la comparaison
   const responsibleCategoryValues = responsibleCategoryIds
-    .map(id => categoryIdToValueMap.get(id))
-    .filter((val): val is string => val !== undefined);
+    .map((id: string) => categoryIdToValueMap.get(id))
+    .filter((val: string | undefined): val is string => val !== undefined);
   
   const coordinatingMissions = allMissions.filter((m) =>
     responsibleCategoryValues.includes(m.category)

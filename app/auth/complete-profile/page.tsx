@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { syncUserToFirestore } from '@/lib/clerk/sync-user-to-firestore';
+import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +26,8 @@ const completeProfileSchema = z.object({
 type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
 
 export default function CompleteProfilePage() {
-  const { user, clerkUser, loading, refreshUser } = useAuth();
+  const { clerkUser, isProfileComplete } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,54 +53,69 @@ export default function CompleteProfilePage() {
   };
 
   useEffect(() => {
-    if (!loading && !clerkUser) {
+    if (!clerkUser) {
       router.push('/auth/login');
+      return;
     }
-  }, [clerkUser, loading, router]);
 
-  useEffect(() => {
-    if (clerkUser) {
-      if (clerkUser.firstName) setValue('firstName', clerkUser.firstName);
-      if (clerkUser.lastName) setValue('lastName', clerkUser.lastName);
-      if (clerkUser.phoneNumbers?.[0]?.phoneNumber) {
-        setValue('phone', formatPhoneNumber(clerkUser.phoneNumbers[0].phoneNumber));
-      }
+    // Pré-remplir le formulaire avec les données Clerk
+    if (clerkUser.firstName) setValue('firstName', clerkUser.firstName);
+    if (clerkUser.lastName) setValue('lastName', clerkUser.lastName);
+    if (clerkUser.phoneNumbers?.[0]?.phoneNumber) {
+      setValue('phone', formatPhoneNumber(clerkUser.phoneNumbers[0].phoneNumber));
     }
-  }, [clerkUser, setValue]);
+  }, [clerkUser, setValue, router]);
+
+  // Si le profil est déjà complet, rediriger vers le dashboard
+  useEffect(() => {
+    if (isProfileComplete) {
+      router.push('/dashboard/missions');
+    }
+  }, [isProfileComplete, router]);
 
   const onSubmit = async (data: CompleteProfileInput) => {
-    if (!clerkUser?.id || !clerkUser?.emailAddresses?.[0]?.emailAddress) return;
+    if (!user) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      await syncUserToFirestore(clerkUser.id, {
-        email: clerkUser.emailAddresses[0].emailAddress,
+      // Mettre à jour le profil Clerk (firstName, lastName)
+      await user.update({
         firstName: data.firstName,
         lastName: data.lastName,
-        phone: data.phone,
       });
 
-      await refreshUser();
+      // Créer/mettre à jour l'utilisateur dans la base de données via API route
+      // L'API route stockera aussi le téléphone et le rôle
+      const response = await fetch('/api/users/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phone: data.phone,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sync user');
+      }
+
       router.push('/dashboard/missions');
     } catch (err: any) {
+      console.error('Error completing profile:', err);
       setError(err.message || 'Une erreur est survenue');
       setIsLoading(false);
     }
   };
 
-  if (loading || !clerkUser) {
+  if (!clerkUser) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Chargement...</p>
       </div>
     );
-  }
-
-  if (user && user.firstName && user.lastName && user.phone) {
-    router.push('/dashboard/missions');
-    return null;
   }
 
   return (
@@ -157,21 +173,6 @@ export default function CompleteProfilePage() {
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-sm text-red-600">{error}</p>
-                {error.includes('offline') && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600">
-                      Votre profil a peut-être déjà été créé. Essayez de vous connecter au dashboard:
-                    </p>
-                    <Button
-                      type="button"
-                      onClick={() => router.push('/dashboard/missions')}
-                      className="mt-2 w-full"
-                      variant="outline"
-                    >
-                      Aller au dashboard
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
 

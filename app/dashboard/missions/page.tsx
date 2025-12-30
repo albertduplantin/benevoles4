@@ -426,8 +426,8 @@ function MissionsPageContent() {
         if (user.role === 'category_responsible' && user.responsibleForCategories) {
           // Convertir les IDs de catégories du responsable en valeurs
           const responsibleCategoryValues = user.responsibleForCategories
-            .map(id => categoryIdToValueMap.get(id))
-            .filter((val): val is string => val !== undefined);
+            .map((id: string) => categoryIdToValueMap.get(id))
+            .filter((val: string | undefined): val is string => val !== undefined);
           
           // Vérifier si la mission fait partie des catégories du responsable
           isResponsibleForThisMission = responsibleCategoryValues.includes(mission.category);
@@ -565,8 +565,8 @@ function MissionsPageContent() {
     if (user.role === 'category_responsible' && user.responsibleForCategories) {
       // Pour les responsables : missions de leurs catégories
       const responsibleCategoryValues = user.responsibleForCategories
-        .map(id => categoryIdToValueMap.get(id))
-        .filter((val): val is string => val !== undefined);
+        .map((id: string) => categoryIdToValueMap.get(id))
+        .filter((val: string | undefined): val is string => val !== undefined);
       
       return missions.filter(m => 
         responsibleCategoryValues.includes(m.category)

@@ -139,8 +139,8 @@ export function MissionCalendar({ missions, currentUserId, currentUser, isAdmin,
 
       // Sinon, filtrer par catégories responsables
       const responsibleCategoryValues = currentUser.responsibleForCategories
-        .map(id => categoryIdToValueMap.get(id))
-        .filter((val): val is string => val !== undefined);
+        .map((id: string) => categoryIdToValueMap.get(id))
+        .filter((val: string | undefined): val is string => val !== undefined);
       
       return missions.filter(m => responsibleCategoryValues.includes(m.category));
     }
