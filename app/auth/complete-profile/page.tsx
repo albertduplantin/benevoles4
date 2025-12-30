@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { updateUserProfile } from '@/lib/firebase/users';
+import { syncUserToFirestore } from '@/lib/clerk/sync-user-to-firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +26,7 @@ const completeProfileSchema = z.object({
 type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
 
 export default function CompleteProfilePage() {
-  const { user, loading, refreshUser } = useAuth();
+  const { user, clerkUser, loading, refreshUser } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,14 +40,9 @@ export default function CompleteProfilePage() {
     resolver: zodResolver(completeProfileSchema),
   });
 
-  // Formater le numéro de téléphone automatiquement
   const formatPhoneNumber = (value: string) => {
-    // Retirer tous les caractères non numériques
     const numbers = value.replace(/\D/g, '');
-    
-    // Formater par groupes de 2 chiffres
     const formatted = numbers.match(/.{1,2}/g)?.join(' ') || numbers;
-    
     return formatted;
   };
 
@@ -57,41 +52,44 @@ export default function CompleteProfilePage() {
   };
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !clerkUser) {
       router.push('/auth/login');
     }
-  }, [user, loading, router]);
+  }, [clerkUser, loading, router]);
 
-  // Pré-remplir le formulaire avec les données existantes
   useEffect(() => {
-    if (user) {
-      if (user.firstName) setValue('firstName', user.firstName);
-      if (user.lastName) setValue('lastName', user.lastName);
-      if (user.phone) setValue('phone', user.phone);
+    if (clerkUser) {
+      if (clerkUser.firstName) setValue('firstName', clerkUser.firstName);
+      if (clerkUser.lastName) setValue('lastName', clerkUser.lastName);
+      if (clerkUser.phoneNumbers?.[0]?.phoneNumber) {
+        setValue('phone', formatPhoneNumber(clerkUser.phoneNumbers[0].phoneNumber));
+      }
     }
-  }, [user, setValue]);
+  }, [clerkUser, setValue]);
 
   const onSubmit = async (data: CompleteProfileInput) => {
-    if (!user) return;
+    if (!clerkUser?.id || !clerkUser?.emailAddresses?.[0]?.emailAddress) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      await updateUserProfile(user.uid, data);
-      
-      // Rafraîchir les données utilisateur
+      await syncUserToFirestore(clerkUser.id, {
+        email: clerkUser.emailAddresses[0].emailAddress,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+      });
+
       await refreshUser();
-      
-      // Rediriger vers les missions avec rechargement complet
-      window.location.href = '/dashboard/missions';
+      router.push('/dashboard/missions');
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue');
       setIsLoading(false);
     }
   };
 
-  if (loading || !user) {
+  if (loading || !clerkUser) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Chargement...</p>
@@ -99,78 +97,71 @@ export default function CompleteProfilePage() {
     );
   }
 
+  if (user && user.firstName && user.lastName && user.phone) {
+    router.push('/dashboard/missions');
+    return null;
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {user.photoURL && (
-              <img 
-                src={user.photoURL} 
-                alt="Profile" 
-                className="w-10 h-10 rounded-full"
-              />
-            )}
-            Complétez votre profil
-          </CardTitle>
+          <CardTitle>Compléter votre profil</CardTitle>
           <CardDescription>
-            Bienvenue ! Nous avons besoin de votre numéro de téléphone pour finaliser votre inscription
+            Bienvenue {clerkUser.emailAddresses[0].emailAddress} ! <br/>
+            Pour continuer, veuillez compléter votre profil.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Prénom *</Label>
+            <div>
+              <Label htmlFor="firstName">Prénom</Label>
               <Input
                 id="firstName"
                 {...register('firstName')}
-                placeholder="Prénom"
+                placeholder="Votre prénom"
                 disabled={isLoading}
               />
               {errors.firstName && (
-                <p className="text-sm text-red-600">{errors.firstName.message}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.firstName.message}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Nom *</Label>
+            <div>
+              <Label htmlFor="lastName">Nom</Label>
               <Input
                 id="lastName"
                 {...register('lastName')}
-                placeholder="Nom"
+                placeholder="Votre nom"
                 disabled={isLoading}
               />
               {errors.lastName && (
-                <p className="text-sm text-red-600">{errors.lastName.message}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.lastName.message}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone *</Label>
+            <div>
+              <Label htmlFor="phone">Téléphone</Label>
               <Input
                 id="phone"
-                type="tel"
                 {...register('phone')}
                 onChange={handlePhoneChange}
                 placeholder="06 12 34 56 78"
                 disabled={isLoading}
               />
               {errors.phone && (
-                <p className="text-sm text-red-600">{errors.phone.message}</p>
+                <p className="text-sm text-red-500 mt-1">{errors.phone.message}</p>
               )}
-              <p className="text-xs text-muted-foreground">
-                Nécessaire pour que les organisateurs puissent vous contacter
-              </p>
             </div>
 
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Enregistrement...' : 'Valider mon profil'}
+              {isLoading ? 'Enregistrement...' : 'Continuer'}
             </Button>
           </form>
         </CardContent>
@@ -178,4 +169,3 @@ export default function CompleteProfilePage() {
     </div>
   );
 }
-
