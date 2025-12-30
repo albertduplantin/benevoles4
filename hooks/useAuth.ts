@@ -58,11 +58,11 @@ export function useAuth() {
     email: clerkUser?.emailAddresses?.[0]?.emailAddress || '',
     role: metadata?.role || 'volunteer',
 
-    // Vérifier si le profil est complet
+    // Vérifier si le profil est complet (firstName et lastName dans Clerk)
+    // Le téléphone est stocké dans Neon, pas besoin de le vérifier ici
     isProfileComplete: !!(
       (clerkUser?.firstName || metadata?.firstName) &&
-      (clerkUser?.lastName || metadata?.lastName) &&
-      (clerkUser?.phoneNumbers?.[0]?.phoneNumber || metadata?.phone)
+      (clerkUser?.lastName || metadata?.lastName)
     ),
   };
 }

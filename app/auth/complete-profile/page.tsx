@@ -86,6 +86,9 @@ export default function CompleteProfilePage() {
         lastName: data.lastName,
       });
 
+      // Recharger les données utilisateur de Clerk pour forcer la mise à jour
+      await user.reload();
+
       // Créer/mettre à jour l'utilisateur dans la base de données via API route
       // L'API route stockera aussi le téléphone et le rôle
       const response = await fetch('/api/users/sync', {
@@ -101,6 +104,9 @@ export default function CompleteProfilePage() {
       if (!response.ok) {
         throw new Error('Failed to sync user');
       }
+
+      // Attendre un peu pour que le hook useAuth se mette à jour
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       router.push('/dashboard/missions');
     } catch (err: any) {
