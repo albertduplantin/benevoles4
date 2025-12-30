@@ -19,17 +19,25 @@ export function useAuth() {
 
   const fetchUserData = async (clerkUserId: string) => {
     try {
+      console.log('Fetching user data for:', clerkUserId);
       const userDoc = await getDoc(doc(db, 'users', clerkUserId));
       if (userDoc.exists()) {
         const userData = userDoc.data() as User;
+        console.log('User data found:', userData);
         setUser(userData);
       } else {
         // L'utilisateur existe dans Clerk mais pas dans Firestore
         // Cela peut arriver juste après l'inscription
+        console.log('User document does not exist in Firestore');
         setUser(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching user data from Firestore:', error);
+      // En cas d'erreur offline, on ne bloque pas l'application
+      // L'utilisateur pourra toujours compléter son profil
+      if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
+        console.warn('Firestore is offline, will retry when online');
+      }
       setUser(null);
     } finally {
       setLoading(false);

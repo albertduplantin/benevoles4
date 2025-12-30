@@ -157,6 +157,21 @@ export default function CompleteProfilePage() {
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-sm text-red-600">{error}</p>
+                {error.includes('offline') && (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">
+                      Votre profil a peut-être déjà été créé. Essayez de vous connecter au dashboard:
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={() => router.push('/dashboard/missions')}
+                      className="mt-2 w-full"
+                      variant="outline"
+                    >
+                      Aller au dashboard
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 

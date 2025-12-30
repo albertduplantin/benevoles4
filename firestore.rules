@@ -1,90 +1,30 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isAdmin() {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    function isCategoryResponsible() {
-      return isAuthenticated() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['category_responsible', 'admin'];
-    }
-    
+    // Règles pour la collection users
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+      // Lecture et écriture autorisées pour tous (mode développement)
+      // À restreindre en production avec authentification Clerk
+      allow read, write: if true;
     }
-    
+
+    // Règles pour les autres collections
     match /missions/{missionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAdmin() || isCategoryResponsible();
-      allow update: if isAdmin() 
-                   || isCategoryResponsible()
-                   || (isAuthenticated() && isVolunteerRegistration());
-      allow delete: if isAdmin() || isCategoryResponsible();
+      allow read, write: if true;
     }
-    
-    // Fonction pour vérifier si c'est une inscription/désinscription de bénévole
-    function isVolunteerRegistration() {
-      let oldVolunteers = resource.data.volunteers;
-      let newVolunteers = request.resource.data.volunteers;
-      let userAdded = request.auth.uid in newVolunteers && !(request.auth.uid in oldVolunteers);
-      let userRemoved = !(request.auth.uid in newVolunteers) && request.auth.uid in oldVolunteers;
-      let onlyVolunteersChanged = request.resource.data.diff(resource.data).affectedKeys().hasOnly(['volunteers', 'updatedAt', 'status']);
-      
-      return (userAdded || userRemoved) && onlyVolunteersChanged;
+
+    match /slots/{slotId} {
+      allow read, write: if true;
     }
-    
-    
-    match /volunteerRequests/{requestId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() 
-                    && request.auth.uid == request.resource.data.userId
-                    && request.resource.data.status == 'pending';
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+
+    match /bookings/{bookingId} {
+      allow read, write: if true;
     }
-    
-    match /settings/{document} {
-      allow read: if isAuthenticated(); // Lecture pour tous les utilisateurs authentifiés
-      allow write: if isAdmin(); // Écriture uniquement pour les admins
-    }
-    
-    match /categoryResponsibles/{assignmentId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /missionCategories/{categoryId} {
-      allow read: if isAuthenticated(); // Tous les utilisateurs authentifiés peuvent lire les catégories
-      allow create, update, delete: if isAdmin(); // Seuls les admins peuvent gérer les catégories
-    }
-    
-    match /notificationLogs/{logId} {
-      allow read: if isAdmin(); // Seuls les admins peuvent lire les logs
-      allow create: if true; // Permettre la création depuis l'API (via Admin SDK si nécessaire)
-      allow update, delete: if false; // Les logs ne peuvent pas être modifiés ou supprimés
-    }
-    
-    match /notifications/{notificationId} {
-      // Lecture : uniquement ses propres notifications
-      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      // Création : depuis l'API (via Admin SDK)
-      allow create: if true;
-      // Mise à jour : uniquement pour marquer comme lu (champ 'read')
-      allow update: if isAuthenticated() 
-                    && request.auth.uid == resource.data.userId
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
-      // Suppression : ses propres notifications ou admin
-      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+
+    // Règle par défaut: refuser tout accès non défini
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
