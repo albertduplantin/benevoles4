@@ -6,15 +6,24 @@ import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading, clerkUser, firestoreError } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Si l'utilisateur est connecté, le rediriger vers la page missions
-    if (!loading && user) {
-      router.push('/dashboard/missions');
+    if (loading) return;
+
+    // Si l'utilisateur est connecté via Clerk
+    if (clerkUser) {
+      // Si on a les données Firestore ET que le profil est complet
+      if (user && user.firstName && user.lastName && user.phone) {
+        router.push('/dashboard/missions');
+      }
+      // Si pas de données Firestore OU erreur Firestore OU profil incomplet
+      else {
+        router.push('/auth/complete-profile');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, clerkUser, firestoreError, router]);
 
   // Afficher un loader pendant la vérification
   if (loading) {
