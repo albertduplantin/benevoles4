@@ -155,7 +155,7 @@ export default function ProfilePage() {
                     <p className="text-sm text-gray-500">Rôle</p>
                     <div className="mt-1">
                       {user.role === 'admin' && (
-                        <Badge variant="destructive">Administrateur</Badge>
+                        <Badge variant="gold">Administrateur</Badge>
                       )}
                       {user.role === 'category_responsible' && (
                         <Badge className="bg-purple-600">Responsable de catégorie</Badge>

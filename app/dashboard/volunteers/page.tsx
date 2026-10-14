@@ -253,7 +253,7 @@ export default function VolunteersPage() {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'destructive';
+        return 'gold';
       case 'category_responsible':
         return 'default';
       default:

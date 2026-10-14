@@ -26,6 +26,7 @@ import {
   ListIcon,
   CalendarIcon,
   UsersIcon,
+  ChevronDownIcon,
   LogOutIcon,
   UserIcon,
   CheckCircle2Icon,
@@ -124,6 +125,10 @@ export function Header() {
   const visibleNavItems = navigation.filter(
     (item) => !item.roles || (user && item.roles.includes(user.role))
   );
+  // Sur ordinateur, les pages réservées aux admins sont regroupées dans un menu "Gestion"
+  const adminOnly = (item: NavItem) => item.roles?.length === 1 && item.roles[0] === 'admin';
+  const primaryNavItems = visibleNavItems.filter((item) => !adminOnly(item));
+  const adminNavItems = visibleNavItems.filter(adminOnly);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -156,7 +161,7 @@ export function Header() {
 
         {/* Navigation Desktop */}
         <nav className="hidden md:flex items-center gap-1">
-          {visibleNavItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             return (
@@ -174,6 +179,36 @@ export function Header() {
               </Link>
             );
           })}
+          {adminNavItems.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                    adminNavItems.some((i) => isActive(i.href))
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <UsersIcon className="h-4 w-4" />
+                  Gestion
+                  <ChevronDownIcon className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {adminNavItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link href={item.href} className="cursor-pointer">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </nav>
 
         {/* Profil utilisateur & Déconnexion Desktop */}
