@@ -6,14 +6,14 @@ import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 export default function Home() {
-  const { clerkUser, loading, isProfileComplete } = useAuth();
+  const { user, loading, isProfileComplete } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
 
-    // Si l'utilisateur est connecté via Clerk
-    if (clerkUser) {
+    // Si l'utilisateur est connecté
+    if (user) {
       // Si le profil est complet, rediriger vers dashboard
       if (isProfileComplete) {
         router.push('/dashboard/missions');
@@ -23,7 +23,7 @@ export default function Home() {
         router.push('/auth/complete-profile');
       }
     }
-  }, [loading, clerkUser, isProfileComplete, router]);
+  }, [loading, user, isProfileComplete, router]);
 
   // Afficher un loader pendant la vérification
   if (loading) {
@@ -38,7 +38,7 @@ export default function Home() {
   }
 
   // Si utilisateur connecté, ne rien afficher (redirection en cours)
-  if (clerkUser) {
+  if (user) {
     return null;
   }
 

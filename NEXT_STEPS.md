@@ -28,7 +28,7 @@ npm run build
 ```bash
 vercel env add DATABASE_URL
 ```
-Entrez: postgresql://neondb_owner:npg_CQJfxbW86nyi@ep-bitter-credit-agw7unej-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
+Entrez: postgresql://neondb_owner:<MOT_DE_PASSE_RETIRE>@ep-bitter-credit-agw7unej-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
 
 ### 2. Pousser vers GitHub
 

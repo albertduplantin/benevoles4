@@ -11,7 +11,7 @@ import {
   deleteCategory,
   archiveCategory,
   isCategoryUsed,
-} from '@/lib/firebase/mission-categories-db';
+} from '@/lib/api/categories';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

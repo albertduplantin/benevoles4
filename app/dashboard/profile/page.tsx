@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { getInitials, getAvatarColor } from '@/lib/utils/avatar';
 import { formatDateTime } from '@/lib/utils/date';
-import { updateUserPreferences } from '@/lib/firebase/users';
+import { updateUserPreferences } from '@/lib/api/users';
 import { toast } from 'sonner';
 import {
   UserIcon,

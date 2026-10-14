@@ -1,20 +1,6 @@
-import { SignUp } from '@clerk/nextjs';
+import { redirect } from 'next/navigation';
 
+// L'inscription et la connexion sont un seul parcours (compte créé à la première connexion)
 export default function RegisterPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <SignUp
-        appearance={{
-          elements: {
-            rootBox: 'mx-auto',
-            card: 'shadow-lg',
-          },
-        }}
-        routing="path"
-        path="/auth/register"
-        signInUrl="/auth/login"
-        afterSignUpUrl="/auth/complete-profile"
-      />
-    </div>
-  );
+  redirect('/auth/login');
 }

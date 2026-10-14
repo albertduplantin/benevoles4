@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { MissionClient, UserClient, VolunteerPreferences } from '@/types';
 import { format, differenceInHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { adminRegisterVolunteer, adminUnregisterVolunteer } from '@/lib/firebase/volunteers';
+import { adminRegisterVolunteer, adminUnregisterVolunteer } from '@/lib/api/users';
 import { toast } from 'sonner';
 import { AlertTriangle, ZoomIn, ZoomOut, CheckCircle2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';

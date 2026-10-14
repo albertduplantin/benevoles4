@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ClerkProvider } from '@clerk/nextjs';
-import { frFR } from '@clerk/localizations';
+import { SessionProvider } from 'next-auth/react';
+import { auth } from '@/auth';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { InstallPWAButton } from '@/components/features/pwa/install-pwa-button';
 import { NetworkStatus } from '@/components/features/pwa/network-status';
@@ -28,13 +28,15 @@ export const viewport = {
   themeColor: '#000000',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
-    <ClerkProvider localization={frFR}>
+    <SessionProvider session={session}>
       <html lang="fr">
         <body className={inter.className}>
           <QueryProvider>
@@ -46,6 +48,6 @@ export default function RootLayout({
           </QueryProvider>
         </body>
       </html>
-    </ClerkProvider>
+    </SessionProvider>
   );
 }

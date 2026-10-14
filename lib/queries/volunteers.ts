@@ -4,8 +4,8 @@ import {
   updateVolunteerInfo,
   changeVolunteerRole,
   deleteVolunteer,
-} from '@/lib/firebase/volunteers';
-import { getUserById } from '@/lib/firebase/users';
+} from '@/lib/api/users';
+import { getUserById } from '@/lib/api/users';
 
 // Clés de requête
 export const volunteerKeys = {

@@ -6,8 +6,8 @@ import {
   getUserMissions,
   getMissionById,
   deleteMission as deleteMissionFB,
-} from '@/lib/firebase/missions';
-import { registerToMission, unregisterFromMission } from '@/lib/firebase/registrations';
+} from '@/lib/api/missions';
+import { registerToMission, unregisterFromMission } from '@/lib/api/registrations';
 
 // Clés de requête
 export const missionKeys = {

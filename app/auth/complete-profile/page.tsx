@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useUser } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,8 +25,7 @@ const completeProfileSchema = z.object({
 type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
 
 export default function CompleteProfilePage() {
-  const { clerkUser, isProfileComplete } = useAuth();
-  const { user } = useUser();
+  const { user, email, isProfileComplete, loading, refreshUser } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,18 +51,20 @@ export default function CompleteProfilePage() {
   };
 
   useEffect(() => {
-    if (!clerkUser) {
+    if (loading) return;
+    if (!user) {
       router.push('/auth/login');
       return;
     }
 
-    // Pré-remplir le formulaire avec les données Clerk
-    if (clerkUser.firstName) setValue('firstName', clerkUser.firstName);
-    if (clerkUser.lastName) setValue('lastName', clerkUser.lastName);
-    if (clerkUser.phoneNumbers?.[0]?.phoneNumber) {
-      setValue('phone', formatPhoneNumber(clerkUser.phoneNumbers[0].phoneNumber));
-    }
-  }, [clerkUser, setValue, router]);
+    // Pré-remplir avec le profil existant, ou le nom du compte Google
+    const [googleFirst = '', ...googleRest] = (user.name || '').split(' ');
+    const first = user.firstName || googleFirst;
+    const last = user.lastName || googleRest.join(' ');
+    if (first) setValue('firstName', first);
+    if (last) setValue('lastName', last);
+    if (user.phone) setValue('phone', formatPhoneNumber(user.phone));
+  }, [loading, user, setValue, router]);
 
   // Si le profil est déjà complet, rediriger vers le dashboard
   useEffect(() => {
@@ -80,17 +80,6 @@ export default function CompleteProfilePage() {
     setError(null);
 
     try {
-      // Mettre à jour le profil Clerk (firstName, lastName)
-      await user.update({
-        firstName: data.firstName,
-        lastName: data.lastName,
-      });
-
-      // Recharger les données utilisateur de Clerk pour forcer la mise à jour
-      await user.reload();
-
-      // Créer/mettre à jour l'utilisateur dans la base de données via API route
-      // L'API route stockera aussi le téléphone et le rôle
       const response = await fetch('/api/users/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -105,8 +94,8 @@ export default function CompleteProfilePage() {
         throw new Error('Failed to sync user');
       }
 
-      // Attendre un peu pour que le hook useAuth se mette à jour
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Recharger la session pour que le profil soit vu comme complet
+      await refreshUser();
 
       router.push('/dashboard/missions');
     } catch (err: any) {
@@ -116,7 +105,7 @@ export default function CompleteProfilePage() {
     }
   };
 
-  if (!clerkUser) {
+  if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Chargement...</p>
@@ -130,7 +119,7 @@ export default function CompleteProfilePage() {
         <CardHeader>
           <CardTitle>Compléter votre profil</CardTitle>
           <CardDescription>
-            Bienvenue {clerkUser.emailAddresses[0].emailAddress} ! <br/>
+            Bienvenue {email} ! <br/>
             Pour continuer, veuillez compléter votre profil.
           </CardDescription>
         </CardHeader>

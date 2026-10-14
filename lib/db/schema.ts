@@ -1,25 +1,32 @@
 import { pgTable, text, timestamp, boolean, integer, jsonb, varchar, primaryKey } from 'drizzle-orm/pg-core';
 
 /**
- * Users table - Stocke les métadonnées supplémentaires des utilisateurs
- * L'authentification est gérée par Clerk
+ * Users table - Utilisateurs de l'application
+ * L'authentification est gérée par Auth.js (Google + lien magique par email).
+ * Les colonnes name/emailVerified/image sont requises par l'adaptateur Auth.js.
+ * Les anciens identifiants Clerk sont conservés tels quels (rattachement par email).
  */
 export const users = pgTable('users', {
-  // Clerk user ID comme clé primaire
+  // ID utilisateur (ancien ID Clerk pour les comptes existants, UUID sinon)
   id: text('id').primaryKey(),
 
-  // Informations de base (synchronisées depuis Clerk)
+  // Champs Auth.js
+  name: text('name'),
+  emailVerified: timestamp('email_verified', { mode: 'date' }),
+  image: text('image'),
+
+  // Informations de base ('' tant que le profil n'est pas complété)
   email: text('email').notNull(),
-  firstName: text('first_name').notNull(),
-  lastName: text('last_name').notNull(),
-  phone: text('phone').notNull(),
+  firstName: text('first_name').notNull().default(''),
+  lastName: text('last_name').notNull().default(''),
+  phone: text('phone').notNull().default(''),
   photoURL: text('photo_url'),
 
   // Rôle et permissions
   role: text('role').notNull().default('volunteer'), // 'volunteer' | 'category_responsible' | 'admin'
   responsibleForCategories: text('responsible_for_categories').array(),
 
-  // Pour bénévoles email-only (sans compte Clerk)
+  // Pour bénévoles email-only (sans compte de connexion)
   emailOnly: boolean('email_only').default(false),
   personalToken: text('personal_token'),
 
@@ -45,6 +52,40 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
+
+/**
+ * Comptes externes (Google) liés à un utilisateur - table Auth.js
+ */
+export const accounts = pgTable(
+  'accounts',
+  {
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    provider: text('provider').notNull(),
+    providerAccountId: text('provider_account_id').notNull(),
+    refresh_token: text('refresh_token'),
+    access_token: text('access_token'),
+    expires_at: integer('expires_at'),
+    token_type: text('token_type'),
+    scope: text('scope'),
+    id_token: text('id_token'),
+    session_state: text('session_state'),
+  },
+  (account) => [primaryKey({ columns: [account.provider, account.providerAccountId] })]
+);
+
+/**
+ * Jetons de lien magique par email - table Auth.js
+ */
+export const verificationTokens = pgTable(
+  'verification_tokens',
+  {
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', { mode: 'date' }).notNull(),
+  },
+  (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })]
+);
 
 /**
  * Missions table
@@ -94,6 +135,53 @@ export const categoryResponsibles = pgTable('category_responsibles', {
   responsibleId: text('responsible_id').notNull().references(() => users.id),
   assignedBy: text('assigned_by').notNull().references(() => users.id),
   assignedAt: timestamp('assigned_at').notNull().defaultNow(),
+});
+
+/**
+ * Catégories de missions (id = value : identifiant unique lisible, utilisé aussi par les missions)
+ */
+export const missionCategories = pgTable('mission_categories', {
+  id: text('id').primaryKey(),
+  value: text('value').notNull(),
+  label: text('label').notNull(),
+  group: text('group_name').notNull(),
+  order: integer('sort_order').notNull().default(0),
+  active: boolean('active').notNull().default(true),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
+/**
+ * Paramètres globaux de l'administration (une seule ligne, id = 'admin')
+ */
+export const adminSettings = pgTable('admin_settings', {
+  id: text('id').primaryKey(),
+  autoApproveResponsibility: boolean('auto_approve_responsibility').notNull().default(false),
+  festivalStartDate: timestamp('festival_start_date'),
+  festivalEndDate: timestamp('festival_end_date'),
+  registrationsBlocked: boolean('registrations_blocked').notNull().default(false),
+  registrationBlockedMessage: text('registration_blocked_message').default(''),
+  updatedAt: timestamp('updated_at'),
+  updatedBy: text('updated_by'),
+});
+
+/**
+ * Notifications in-app
+ */
+export const notifications = pgTable('notifications', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  missionId: text('mission_id'),
+  missionTitle: text('mission_title'),
+  volunteerName: text('volunteer_name'),
+  volunteerId: text('volunteer_id'),
+  read: boolean('read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  readAt: timestamp('read_at'),
 });
 
 /**
@@ -156,6 +244,9 @@ export type NewMission = typeof missions.$inferInsert;
 
 export type CategoryResponsible = typeof categoryResponsibles.$inferSelect;
 export type NewCategoryResponsible = typeof categoryResponsibles.$inferInsert;
+
+export type MissionCategoryRow = typeof missionCategories.$inferSelect;
+export type NotificationRow = typeof notifications.$inferSelect;
 
 export type Slot = typeof slots.$inferSelect;
 export type NewSlot = typeof slots.$inferInsert;

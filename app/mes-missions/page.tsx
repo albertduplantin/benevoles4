@@ -2,10 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getUserByToken } from '@/lib/firebase/email-only-users';
-import { getAllMissions } from '@/lib/firebase/missions';
-import { unregisterFromMission } from '@/lib/firebase/registrations';
-import { getUserById } from '@/lib/firebase/users';
+import { api } from '@/lib/api/http';
 import { UserClient, MissionClient } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +26,7 @@ function MyMissionsContent() {
   const [missionParticipants, setMissionParticipants] = useState<Map<string, UserClient[]>>(new Map());
 
   useEffect(() => {
-    const loadUserAndMissions = async () => {
+    const load = async () => {
       if (!token) {
         setError('Token manquant. Veuillez utiliser le lien envoyé par email.');
         setIsLoading(false);
@@ -37,72 +34,39 @@ function MyMissionsContent() {
       }
 
       try {
-        // Récupérer l'utilisateur par son token
-        const userData = await getUserByToken(token);
-        
-        if (!userData) {
-          setError('Lien invalide ou expiré. Veuillez contacter l\'administrateur.');
-          setIsLoading(false);
-          return;
+        const data = await api<{
+          user: UserClient;
+          missions: MissionClient[];
+          participants: Array<{ uid: string; firstName: string; lastName: string }>;
+        }>(`/api/personal?token=${encodeURIComponent(token)}`);
+
+        setUser(data.user);
+        setMissions(data.missions);
+
+        // Participants de chaque mission (noms seulement) pour l'export de planning
+        const byId = new Map(data.participants.map((p) => [p.uid, p as unknown as UserClient]));
+        const participantsMap = new Map<string, UserClient[]>();
+        for (const mission of data.missions) {
+          participantsMap.set(
+            mission.id,
+            mission.volunteers.map((id) => byId.get(id)).filter((p): p is UserClient => !!p)
+          );
         }
-
-        setUser(userData);
-
-        // Charger toutes les missions
-        const allMissions = await getAllMissions();
-        
-        // Filtrer les missions où l'utilisateur est inscrit
-        const userMissions = allMissions.filter(m => 
-          m.volunteers.includes(userData.uid)
-        );
-
-        // Trier par date (les plus proches en premier)
-        userMissions.sort((a, b) => {
-          if (!a.startDate || !b.startDate) return 0;
-          return a.startDate.getTime() - b.startDate.getTime();
-        });
-
-        setMissions(userMissions);
+        setMissionParticipants(participantsMap);
       } catch (err: any) {
         console.error('Error loading data:', err);
-        setError('Erreur lors du chargement de vos missions. Veuillez réessayer.');
+        setError(
+          /invalide|expiré/i.test(err.message)
+            ? "Lien invalide ou expiré. Veuillez contacter l'administrateur."
+            : 'Erreur lors du chargement de vos missions. Veuillez réessayer.'
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUserAndMissions();
+    load();
   }, [token]);
-
-  // Charger les participants pour l'export de planning
-  useEffect(() => {
-    const loadParticipants = async () => {
-      if (missions.length === 0) return;
-
-      const participantsMap = new Map<string, UserClient[]>();
-
-      for (const mission of missions) {
-        if (mission.volunteers.length > 0) {
-          const participants: UserClient[] = [];
-          for (const volunteerId of mission.volunteers) {
-            try {
-              const volunteer = await getUserById(volunteerId);
-              if (volunteer) {
-                participants.push(volunteer);
-              }
-            } catch (error) {
-              console.error(`Error loading volunteer ${volunteerId}:`, error);
-            }
-          }
-          participantsMap.set(mission.id, participants);
-        }
-      }
-
-      setMissionParticipants(participantsMap);
-    };
-
-    loadParticipants();
-  }, [missions]);
 
   const handleUnregister = async (missionId: string, missionTitle: string) => {
     if (!user) return;
@@ -113,7 +77,7 @@ function MyMissionsContent() {
 
     try {
       setUnregisteringMissionId(missionId);
-      await unregisterFromMission(missionId, user.uid);
+      await api(`/api/personal?token=${encodeURIComponent(token ?? '')}&missionId=${encodeURIComponent(missionId)}`, { method: 'DELETE' });
       
       // Retirer la mission de la liste locale
       setMissions(prev => prev.filter(m => m.id !== missionId));

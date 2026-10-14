@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 
 /**
  * User Roles
@@ -94,12 +93,12 @@ export interface User {
   responsibleForCategories?: string[]; // Categories where user is responsible
   emailOnly?: boolean; // For volunteers who only use email, no login
   personalToken?: string; // Unique token for email-only access to personal mission list
-  createdAt: Timestamp | Date;
-  updatedAt?: Timestamp | Date;
+  createdAt: Date;
+  updatedAt?: Date;
   consents: {
     dataProcessing: boolean;
     communications: boolean;
-    consentDate: Timestamp | Date;
+    consentDate: Date;
   };
   notificationPreferences?: {
     email: boolean;
@@ -119,16 +118,16 @@ export interface Mission {
   description: string;
   category: string; // Category of the mission
   type: MissionType;
-  startDate?: Timestamp | Date; // Optional for ongoing missions
-  endDate?: Timestamp | Date; // Optional for ongoing missions
+  startDate?: Date; // Optional for ongoing missions
+  endDate?: Date; // Optional for ongoing missions
   location: string;
   maxVolunteers: number;
   status: MissionStatus;
   isUrgent: boolean;
   isRecurrent: boolean;
   createdBy: string; // User UID
-  createdAt: Timestamp | Date;
-  updatedAt?: Timestamp | Date;
+  createdAt: Date;
+  updatedAt?: Date;
   volunteers: string[]; // Array of User UIDs
   waitlist?: string[]; // Array of User UIDs waiting for a spot
   // DEPRECATED: Use category-responsibles system instead
@@ -145,7 +144,7 @@ export interface CategoryResponsible {
   categoryLabel: string; // Category display name
   responsibleId: string; // User UID
   assignedBy: string; // Admin UID who assigned
-  assignedAt: Timestamp | Date;
+  assignedAt: Date;
 }
 
 /**
@@ -156,8 +155,8 @@ export interface VolunteerRequest {
   missionId: string;
   userId: string;
   status: VolunteerRequestStatus;
-  requestedAt: Timestamp | Date;
-  processedAt?: Timestamp | Date;
+  requestedAt: Date;
+  processedAt?: Date;
   processedBy?: string; // Admin UID
   message?: string;
 }

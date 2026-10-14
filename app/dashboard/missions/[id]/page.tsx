@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useParams } from 'next/navigation';
-import { getMissionById, duplicateMission } from '@/lib/firebase/missions';
-import { registerToMission, unregisterFromMission } from '@/lib/firebase/registrations';
-import { getUserById } from '@/lib/firebase/users';
-import { isProfileComplete } from '@/lib/firebase/users';
+import { getMissionById, duplicateMission } from '@/lib/api/missions';
+import { registerToMission, unregisterFromMission } from '@/lib/api/registrations';
+import { getUserById } from '@/lib/api/users';
+import { isProfileComplete } from '@/lib/api/users';
 // Ancien système de postulation supprimé - utiliser category-responsibles maintenant
 import { MissionClient, UserClient } from '@/types';
 import { Button } from '@/components/ui/button';

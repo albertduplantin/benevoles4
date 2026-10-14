@@ -76,7 +76,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 
 # Neon
-DATABASE_URL=postgresql://neondb_owner:...@ep-bitter-credit-agw7unej-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:<MOT_DE_PASSE_RETIRE>@ep-bitter-credit-agw7unej-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require
 ```
 
 ### Scripts package.json

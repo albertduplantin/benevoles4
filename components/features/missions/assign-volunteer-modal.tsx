@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
-import { adminRegisterVolunteer, adminUnregisterVolunteer } from '@/lib/firebase/volunteers';
+import { getAllVolunteers } from '@/lib/api/users';
+import { adminRegisterVolunteer, adminUnregisterVolunteer } from '@/lib/api/users';
 import { UserClient } from '@/types';
 import { SearchIcon, UserPlusIcon, UserMinusIcon, XIcon, MailIcon } from 'lucide-react';
 import { toast } from 'sonner';

@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDateTime } from '@/lib/utils/date';
 import { canEditMissionAsync, canDeleteMissionAsync } from '@/lib/utils/permissions';
 import { EditIcon, TrashIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
+import { getGroupedCategories } from '@/lib/api/categories';
 import { MissionCategoryClient } from '@/types/category';
 import './calendar.css';
 

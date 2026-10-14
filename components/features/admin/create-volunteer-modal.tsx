@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { createVolunteerManually } from '@/lib/firebase/create-volunteer';
+import { createVolunteerManually } from '@/lib/api/users';
 import { toast } from 'sonner';
 import { UserPlusIcon, CopyIcon, CheckIcon, MailIcon } from 'lucide-react';
 

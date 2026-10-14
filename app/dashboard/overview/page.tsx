@@ -3,9 +3,9 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isProfileComplete, getUserById } from '@/lib/firebase/users';
-import { getUserMissions, getAllMissions } from '@/lib/firebase/missions';
-import { getAdminSettings, updateAdminSettings } from '@/lib/firebase/admin-settings';
+import { isProfileComplete, getUserById } from '@/lib/api/users';
+import { getUserMissions, getAllMissions } from '@/lib/api/missions';
+import { getAdminSettings, updateAdminSettings } from '@/lib/api/settings';
 import { MissionClient, UserClient, CategoryResponsibleClient } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,7 @@ import { ResponsibleCategoriesBanner } from '@/components/features/category-resp
 import { PostFestivalReport } from '@/components/features/admin/post-festival-report';
 import { RegistrationControl } from '@/components/features/admin/registration-control';
 import { ALL_CATEGORIES_WITH_LABELS } from '@/lib/constants/mission-categories';
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
+import { getGroupedCategories } from '@/lib/api/categories';
 import { MissionCategoryClient } from '@/types/category';
 import Link from 'next/link';
 import {
@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { exportVolunteerMissionGridExcel } from '@/lib/utils/excel-export';
 import { toast } from 'sonner';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
+import { getAllVolunteers } from '@/lib/api/users';
 
 export default function DashboardOverviewPage() {
   const { user, loading } = useAuth();

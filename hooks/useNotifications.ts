@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '@/lib/api/http';
 
 export interface Notification {
   id: string;
@@ -17,10 +16,7 @@ export interface Notification {
   readAt?: Date;
 }
 
-/**
- * Hook pour les notifications push navigateur (stub pour compatibilité)
- * Retourne des valeurs par défaut pour éviter les erreurs
- */
+/** Notifications push : non prises en charge pour l'instant (les notifications in-app ci-dessous suffisent) */
 export function useNotifications() {
   return {
     isSupported: false,
@@ -32,95 +28,55 @@ export function useNotifications() {
   };
 }
 
-/**
- * Hook pour récupérer les notifications Firestore d'un utilisateur en temps réel
- * (Pour les notifications d'inscription aux missions)
- */
-export function useFirestoreNotifications(userId: string | undefined) {
+const POLL_INTERVAL_MS = 30_000;
+
+/** Notifications in-app de l'utilisateur, rafraîchies toutes les 30 s (et quand l'onglet reprend le focus) */
+export function useInAppNotifications(userId: string | undefined) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const { notifications } = await api<{ notifications: Notification[] }>('/api/notifications');
+      setNotifications(notifications);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!userId) {
       setNotifications([]);
-      setUnreadCount(0);
       setLoading(false);
       return;
     }
+    refresh();
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') refresh();
+    }, POLL_INTERVAL_MS);
+    const onVisible = () => document.visibilityState === 'visible' && refresh();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [userId, refresh]);
 
-    const notificationsRef = collection(db, 'notifications');
-    const q = query(
-      notificationsRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const notifs = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            userId: data.userId,
-            type: data.type,
-            title: data.title,
-            message: data.message,
-            missionId: data.missionId,
-            missionTitle: data.missionTitle,
-            volunteerName: data.volunteerName,
-            volunteerId: data.volunteerId,
-            read: data.read,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            readAt: data.readAt?.toDate(),
-          };
-        });
-
-        setNotifications(notifs);
-        setUnreadCount(notifs.filter((n) => !n.read).length);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Erreur lors de la récupération des notifications:', error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [userId]);
-
-  /**
-   * Marquer une notification comme lue
-   */
   const markAsRead = async (notificationId: string) => {
-    try {
-      const notifRef = doc(db, 'notifications', notificationId);
-      await updateDoc(notifRef, {
-        read: true,
-        readAt: new Date(),
-      });
-    } catch (error) {
-      console.error('Erreur lors du marquage comme lu:', error);
-    }
+    setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)));
+    await api('/api/notifications', { method: 'PATCH', body: { id: notificationId } }).catch(() => refresh());
   };
 
-  /**
-   * Marquer toutes les notifications comme lues
-   */
   const markAllAsRead = async () => {
-    try {
-      const unreadNotifs = notifications.filter((n) => !n.read);
-      const promises = unreadNotifs.map((n) => markAsRead(n.id));
-      await Promise.all(promises);
-    } catch (error) {
-      console.error('Erreur lors du marquage de toutes comme lues:', error);
-    }
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await api('/api/notifications', { method: 'PATCH', body: { all: true } }).catch(() => refresh());
   };
 
   return {
     notifications,
-    unreadCount,
+    unreadCount: notifications.filter((n) => !n.read).length,
     loading,
     markAsRead,
     markAllAsRead,

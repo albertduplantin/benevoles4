@@ -41,7 +41,7 @@ import {
   Loader2Icon,
   UsersIcon,
 } from 'lucide-react';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
+import { getAllVolunteers } from '@/lib/api/users';
 
 interface VolunteerCallModalV2Props {
   missions: MissionClient[];

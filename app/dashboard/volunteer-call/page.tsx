@@ -39,8 +39,8 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
 } from 'lucide-react';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
-import { getAllMissions } from '@/lib/firebase/missions';
+import { getAllVolunteers } from '@/lib/api/users';
+import { getAllMissions } from '@/lib/api/missions';
 
 type RecipientType = 'all' | 'by_category' | 'without_mission' | 'custom';
 

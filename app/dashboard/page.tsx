@@ -3,8 +3,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isProfileComplete, getUserById } from '@/lib/firebase/users';
-import { getUserMissions, getAllMissions } from '@/lib/firebase/missions';
+import { isProfileComplete, getUserById } from '@/lib/api/users';
+import { getUserMissions, getAllMissions } from '@/lib/api/missions';
 import { MissionClient, UserClient } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MissionCalendar } from '@/components/features/calendar/mission-calendar';

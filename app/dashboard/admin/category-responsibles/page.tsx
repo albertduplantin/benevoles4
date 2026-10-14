@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { CategoryResponsibleClient, UserClient } from '@/types';
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
+import { getGroupedCategories } from '@/lib/api/categories';
 import { MissionCategoryClient } from '@/types/category';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

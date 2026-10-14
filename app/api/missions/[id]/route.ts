@@ -1,146 +1,86 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
-import { db, missions, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { db, missions } from '@/lib/db';
+import { handle, json, requireUser, HttpError, type SessionUser } from '@/lib/server/api';
+import { toMissionClient } from '@/lib/server/mappers';
+import { getMission, rebalance } from '@/lib/server/missions';
 
-/**
- * GET /api/missions/[id]
- * Récupère une mission par son ID
- */
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { userId } = await auth();
+type Ctx = { params: Promise<{ id: string }> };
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id } = await params;
-
-    const mission = await db.query.missions.findFirst({
-      where: eq(missions.id, id),
-    });
-
-    if (!mission) {
-      return NextResponse.json({ error: 'Mission not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ mission });
-  } catch (error) {
-    console.error('Error fetching mission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+function canManage(user: SessionUser, category: string): boolean {
+  return user.role === 'admin' || (user.role === 'category_responsible' && user.responsibleForCategories.includes(category));
 }
 
-/**
- * PUT /api/missions/[id]
- * Met à jour une mission
- */
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const body = await request.json();
-
-    // Vérifier que la mission existe
-    const existingMission = await db.query.missions.findFirst({
-      where: eq(missions.id, id),
-    });
-
-    if (!existingMission) {
-      return NextResponse.json({ error: 'Mission not found' }, { status: 404 });
-    }
-
-    // Vérifier les permissions (créateur ou admin)
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (existingMission.createdBy !== userId && user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Mettre à jour la mission
-    const [updatedMission] = await db
-      .update(missions)
-      .set({
-        ...body,
-        startDate: body.startDate ? new Date(body.startDate) : undefined,
-        endDate: body.endDate ? new Date(body.endDate) : undefined,
-        maxVolunteers: body.maxVolunteers ? parseInt(body.maxVolunteers) : undefined,
-        updatedAt: new Date(),
-      })
-      .where(eq(missions.id, id))
-      .returning();
-
-    return NextResponse.json({ mission: updatedMission });
-  } catch (error) {
-    console.error('Error updating mission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+/** GET /api/missions/[id] */
+export const GET = handle(async (_request: Request, { params }: Ctx) => {
+  const user = await requireUser();
+  const { id } = await params;
+  const mission = await getMission(id);
+  // Les brouillons ne sont visibles que par ceux qui peuvent les gérer
+  if (mission.status === 'draft' && !canManage(user, mission.category)) {
+    throw new HttpError(404, 'Mission introuvable');
   }
-}
+  return json({ mission: toMissionClient(mission) });
+});
 
-/**
- * DELETE /api/missions/[id]
- * Supprime une mission
- */
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { userId } = await auth();
+const updateSchema = z
+  .object({
+    title: z.string().trim().min(1),
+    description: z.string().trim().min(1),
+    category: z.string().trim().min(1),
+    type: z.enum(['scheduled', 'ongoing']),
+    startDate: z.string().datetime().nullable(),
+    endDate: z.string().datetime().nullable(),
+    location: z.string().trim().min(1),
+    maxVolunteers: z.coerce.number().int().min(1),
+    isUrgent: z.boolean(),
+    isRecurrent: z.boolean(),
+    status: z.enum(['draft', 'published', 'full', 'cancelled', 'completed']),
+  })
+  .partial();
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+/** PUT /api/missions/[id] : modification (admin ou responsable de la catégorie) */
+export const PUT = handle(async (request: Request, { params }: Ctx) => {
+  const user = await requireUser(['admin', 'category_responsible']);
+  const { id } = await params;
+  const existing = await getMission(id);
+  if (!canManage(user, existing.category)) throw new HttpError(403, 'Accès refusé');
 
-    const { id } = await params;
+  const parsed = updateSchema.safeParse(await request.json());
+  if (!parsed.success) throw new HttpError(400, 'Champs invalides');
+  const data = parsed.data;
 
-    // Vérifier que la mission existe
-    const existingMission = await db.query.missions.findFirst({
-      where: eq(missions.id, id),
-    });
-
-    if (!existingMission) {
-      return NextResponse.json({ error: 'Mission not found' }, { status: 404 });
-    }
-
-    // Vérifier les permissions (créateur ou admin)
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (existingMission.createdBy !== userId && user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Supprimer la mission
-    await db.delete(missions).where(eq(missions.id, id));
-
-    return NextResponse.json({ message: 'Mission deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting mission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (data.category && data.category !== existing.category && !canManage(user, data.category)) {
+    throw new HttpError(403, "Vous n'êtes pas responsable de cette catégorie");
   }
-}
+
+  const { startDate, endDate, ...rest } = data;
+  const [updated] = await db
+    .update(missions)
+    .set({
+      ...rest,
+      ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+      ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
+      updatedAt: new Date(),
+    })
+    .where(eq(missions.id, id))
+    .returning();
+
+  // Nouveau quota ou nouveau statut : réaligne published/full et promeut la liste d'attente
+  if (data.maxVolunteers !== undefined || data.status === 'published') {
+    await rebalance(id);
+    return json({ mission: toMissionClient(await getMission(id)) });
+  }
+  return json({ mission: toMissionClient(updated) });
+});
+
+/** DELETE /api/missions/[id] */
+export const DELETE = handle(async (_request: Request, { params }: Ctx) => {
+  const user = await requireUser(['admin', 'category_responsible']);
+  const { id } = await params;
+  const existing = await getMission(id);
+  if (!canManage(user, existing.category)) throw new HttpError(403, 'Accès refusé');
+
+  await db.delete(missions).where(eq(missions.id, id));
+  return json({ success: true });
+});

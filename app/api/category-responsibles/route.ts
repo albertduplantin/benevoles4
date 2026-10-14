@@ -1,101 +1,133 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { and, asc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { db, users, categoryResponsibles, missionCategories } from '@/lib/db';
+import { handle, json, newId, requireUser, HttpError } from '@/lib/server/api';
+import { toResponsibleClient, toUserClient } from '@/lib/server/mappers';
 
-// Force dynamic rendering (pas de pré-rendering au build)
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+/**
+ * GET /api/category-responsibles
+ * - ?userId= : affectations d'un utilisateur (soi-même, ou le staff)
+ * - ?categoryId= : responsables d'une catégorie (staff)
+ * - sinon (admin) : toutes les affectations + bénévoles/responsables assignables
+ */
+export const GET = handle(async (request: Request) => {
+  const caller = await requireUser();
+  const { searchParams } = new URL(request.url);
+  const userId = searchParams.get('userId');
+  const categoryId = searchParams.get('categoryId');
 
-// GET - Obtenir tous les responsables de catégories + liste des bénévoles
-export async function GET(request: NextRequest) {
-  try {
-    // Import dynamique pour éviter l'exécution pendant le build
-    const { getAllCategoryResponsiblesAdmin } = await import('@/lib/firebase/category-responsibles');
-    const { getAllVolunteersAdmin } = await import('@/lib/firebase/users-admin');
-    
-    const [assignments, users] = await Promise.all([
-      getAllCategoryResponsiblesAdmin(),
-      getAllVolunteersAdmin(),
-    ]);
+  if (userId) {
+    if (userId !== caller.id && caller.role === 'volunteer') throw new HttpError(403, 'Accès refusé');
+    const rows = await db
+      .select()
+      .from(categoryResponsibles)
+      .where(eq(categoryResponsibles.responsibleId, userId))
+      .orderBy(asc(categoryResponsibles.categoryLabel));
+    return json({ assignments: rows.map(toResponsibleClient) });
+  }
 
-    console.log('📊 API - Total users:', users?.length || 0);
-    
-    // Filtrer les utilisateurs (seulement bénévoles et responsables)
-    const volunteers = users.filter(
-      u => u.role === 'volunteer' || u.role === 'category_responsible'
-    );
-
-    console.log('👥 API - Volunteers filtered:', volunteers?.length || 0);
-    console.log('📋 API - Assignments:', assignments?.length || 0);
-
-    return NextResponse.json({
-      assignments: assignments || [],
-      volunteers: volunteers || [],
+  // Les coordonnées des responsables d'une catégorie sont visibles de tous les bénévoles connectés
+  if (categoryId) {
+    const rows = await db
+      .select({ assignment: categoryResponsibles, user: users })
+      .from(categoryResponsibles)
+      .innerJoin(users, eq(users.id, categoryResponsibles.responsibleId))
+      .where(eq(categoryResponsibles.categoryId, categoryId));
+    return json({
+      assignments: rows.map((r) => toResponsibleClient(r.assignment)),
+      users: rows.map((r) => ({
+        ...toUserClient(r.user),
+        // Pas de données sensibles pour un simple bénévole : uniquement de quoi contacter le responsable
+        ...(caller.role === 'volunteer' && { preferences: undefined, fcmTokens: undefined, notificationSettings: undefined }),
+      })),
     });
-  } catch (error: any) {
-    console.error('Error fetching category responsibles:', error);
-    return NextResponse.json(
-      { error: error.message || 'Error fetching data' },
-      { status: 500 }
-    );
   }
-}
 
-// POST - Assigner un responsable
-export async function POST(request: NextRequest) {
-  try {
-    const { assignCategoryResponsibleAdmin } = await import('@/lib/firebase/category-responsibles');
-    
-    const body = await request.json();
-    const { categoryId, categoryLabel, responsibleId, adminId } = body;
+  if (caller.role !== 'admin') throw new HttpError(403, 'Accès refusé');
 
-    if (!categoryId || !categoryLabel || !responsibleId || !adminId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+  const [assignments, people] = await Promise.all([
+    db.select().from(categoryResponsibles).orderBy(asc(categoryResponsibles.categoryLabel)),
+    db.select().from(users).where(inArray(users.role, ['volunteer', 'category_responsible'])),
+  ]);
+  return json({
+    assignments: assignments.map(toResponsibleClient),
+    volunteers: people.map((p) => toUserClient(p)),
+  });
+});
 
-    const id = await assignCategoryResponsibleAdmin(
-      categoryId,
-      categoryLabel,
-      responsibleId,
-      adminId
-    );
+const assignSchema = z.object({
+  categoryId: z.string().min(1),
+  responsibleId: z.string().min(1),
+});
 
-    return NextResponse.json({ success: true, id });
-  } catch (error: any) {
-    console.error('Error assigning responsible:', error);
-    return NextResponse.json(
-      { error: error.message || 'Error assigning responsible' },
-      { status: 500 }
-    );
+/** POST : nomme un responsable de catégorie (admin) */
+export const POST = handle(async (request: Request) => {
+  const admin = await requireUser(['admin']);
+  const parsed = assignSchema.safeParse(await request.json());
+  if (!parsed.success) throw new HttpError(400, 'Champs manquants');
+  const { categoryId, responsibleId } = parsed.data;
+
+  const category = await db.query.missionCategories.findFirst({ where: eq(missionCategories.id, categoryId) });
+  if (!category) throw new HttpError(404, 'Catégorie introuvable');
+  const person = await db.query.users.findFirst({ where: eq(users.id, responsibleId) });
+  if (!person) throw new HttpError(404, 'Utilisateur introuvable');
+
+  const existing = await db
+    .select({ id: categoryResponsibles.id })
+    .from(categoryResponsibles)
+    .where(and(eq(categoryResponsibles.categoryId, categoryId), eq(categoryResponsibles.responsibleId, responsibleId)))
+    .limit(1);
+  if (existing.length > 0) throw new HttpError(409, 'Cet utilisateur est déjà responsable de cette catégorie.');
+
+  const id = newId();
+  await db.insert(categoryResponsibles).values({
+    id,
+    categoryId,
+    categoryLabel: category.label,
+    responsibleId,
+    assignedBy: admin.id,
+  });
+
+  // Un admin le reste ; sinon l'utilisateur devient responsable de catégorie
+  const categories = [...new Set([...(person.responsibleForCategories ?? []), categoryId])];
+  await db
+    .update(users)
+    .set({
+      role: person.role === 'admin' ? 'admin' : 'category_responsible',
+      responsibleForCategories: categories,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, responsibleId));
+
+  return json({ success: true, id }, 201);
+});
+
+/** DELETE ?categoryId=&responsibleId= : retire un responsable (admin) */
+export const DELETE = handle(async (request: Request) => {
+  await requireUser(['admin']);
+  const { searchParams } = new URL(request.url);
+  const categoryId = searchParams.get('categoryId');
+  const responsibleId = searchParams.get('responsibleId');
+  if (!categoryId || !responsibleId) throw new HttpError(400, 'categoryId et responsibleId requis');
+
+  const removed = await db
+    .delete(categoryResponsibles)
+    .where(and(eq(categoryResponsibles.categoryId, categoryId), eq(categoryResponsibles.responsibleId, responsibleId)))
+    .returning({ id: categoryResponsibles.id });
+  if (removed.length === 0) throw new HttpError(404, 'Aucun responsable trouvé pour cette catégorie');
+
+  const person = await db.query.users.findFirst({ where: eq(users.id, responsibleId) });
+  if (person) {
+    const categories = (person.responsibleForCategories ?? []).filter((c) => c !== categoryId);
+    await db
+      .update(users)
+      .set({
+        role: person.role === 'admin' ? 'admin' : categories.length > 0 ? 'category_responsible' : 'volunteer',
+        responsibleForCategories: categories,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, responsibleId));
   }
-}
 
-// DELETE - Retirer un responsable
-export async function DELETE(request: NextRequest) {
-  try {
-    const { removeCategoryResponsibleAdmin } = await import('@/lib/firebase/category-responsibles');
-    
-    const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId');
-    const responsibleId = searchParams.get('responsibleId');
-
-    if (!categoryId || !responsibleId) {
-      return NextResponse.json(
-        { error: 'Missing categoryId or responsibleId' },
-        { status: 400 }
-      );
-    }
-
-    await removeCategoryResponsibleAdmin(categoryId, responsibleId);
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Error removing responsible:', error);
-    return NextResponse.json(
-      { error: error.message || 'Error removing responsible' },
-      { status: 500 }
-    );
-  }
-}
-
+  return json({ success: true });
+});

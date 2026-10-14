@@ -1,48 +1,29 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
+import { authConfig } from './auth.config';
 
-// Routes publiques accessibles sans authentification
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/auth/login(.*)',
-  '/auth/register(.*)',
-  '/auth/reset-password(.*)',
-  '/auth/complete-profile(.*)',
-  '/legal(.*)',
-  '/api/webhooks/(.*)', // Pour les webhooks Clerk
-]);
+// Instance Edge sans adaptateur : lit uniquement le cookie JWT
+const { auth } = NextAuth(authConfig);
 
-export default clerkMiddleware(async (auth, request) => {
-  const { userId } = await auth();
+export default auth((request) => {
   const { pathname } = request.nextUrl;
+  const isLoggedIn = !!request.auth?.user;
 
-  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une route protégée
-  if (!userId && !isPublicRoute(request)) {
-    const signInUrl = new URL('/auth/login', request.url);
-    signInUrl.searchParams.set('redirect_url', pathname);
-    return NextResponse.redirect(signInUrl);
+  // Les API renvoient 401 en JSON plutôt qu'une redirection HTML
+  const isPublicApi = pathname.startsWith('/api/auth/') || pathname === '/api/personal';
+  if (pathname.startsWith('/api/') && !isPublicApi && !isLoggedIn) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Si l'utilisateur est connecté et essaie d'accéder aux pages auth, rediriger vers dashboard
-  // SAUF pour complete-profile et les callbacks SSO de Clerk
-  if (userId && pathname.startsWith('/auth/') &&
-      !pathname.startsWith('/auth/complete-profile') &&
-      !pathname.includes('/sso-callback')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Connecté : inutile de revoir la page de connexion
+  if (isLoggedIn && (pathname === '/auth/login' || pathname === '/auth/verify')) {
+    return NextResponse.redirect(new URL('/dashboard/missions', request.url));
   }
-
-  return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc.)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Exclut les fichiers statiques, le manifest PWA et le service worker
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|firebase-messaging-sw.js|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|json)$).*)',
   ],
 };

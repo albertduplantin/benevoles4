@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getAdminSettings, updateAdminSettings, AdminSettings } from '@/lib/firebase/admin-settings';
+import { getAdminSettings, updateAdminSettings, AdminSettings } from '@/lib/api/settings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';

@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
-import { setUserEmailOnly, regeneratePersonalToken } from '@/lib/firebase/email-only-users';
+import { getAllVolunteers } from '@/lib/api/users';
+import { setUserEmailOnly, regeneratePersonalToken } from '@/lib/api/users';
 import { UserClient } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

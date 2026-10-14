@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAdminSettings, AdminSettings } from '@/lib/firebase/admin-settings';
+import { getAdminSettings, AdminSettings } from '@/lib/api/settings';
 import { AlertCircle } from 'lucide-react';
 
 export function RegistrationBlockedBanner() {

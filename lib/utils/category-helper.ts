@@ -3,7 +3,7 @@
  * Gère la conversion entre IDs Firestore et values textuelles
  */
 
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
+import { getGroupedCategories } from '@/lib/api/categories';
 import { User, UserClient } from '@/types';
 
 // Cache pour éviter de charger les catégories à chaque fois

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useFirestoreNotifications } from '@/hooks/useNotifications';
+import { useInAppNotifications } from '@/hooks/useNotifications';
 import { BellIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,7 @@ import Link from 'next/link';
 
 export function NotificationBell() {
   const { user } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useFirestoreNotifications(user?.uid);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useInAppNotifications(user?.uid);
   const [open, setOpen] = useState(false);
 
   if (!user || (user.role !== 'admin' && user.role !== 'category_responsible')) {

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useClerk } from '@clerk/nextjs';
+import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -108,14 +108,12 @@ const navigation: NavItem[] = [
 
 export function Header() {
   const { user } = useAuth();
-  const { signOut } = useClerk();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      window.location.href = '/auth/login';
+      await signOut({ callbackUrl: '/auth/login' });
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -203,18 +201,6 @@ export function Header() {
                   <Link href="/dashboard/admin/notifications" className="cursor-pointer">
                     <BellIcon className="mr-2 h-4 w-4" />
                     Envoyer notifications
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/debug-notifications" className="cursor-pointer">
-                    <SearchIcon className="mr-2 h-4 w-4" />
-                    Debug notifications
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/admin/cleanup-auth" className="cursor-pointer">
-                    <WrenchIcon className="mr-2 h-4 w-4" />
-                    Nettoyage Auth
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>

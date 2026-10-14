@@ -3,10 +3,10 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isProfileComplete } from '@/lib/firebase/users';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
-import { getAdminSettings } from '@/lib/firebase/admin-settings';
+import { isProfileComplete } from '@/lib/api/users';
+import { getAllVolunteers } from '@/lib/api/users';
+import { getGroupedCategories } from '@/lib/api/categories';
+import { getAdminSettings } from '@/lib/api/settings';
 import { UserClient, MissionCategoryClient } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

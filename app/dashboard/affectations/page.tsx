@@ -3,9 +3,9 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isProfileComplete } from '@/lib/firebase/users';
-import { getAllMissions } from '@/lib/firebase/missions';
-import { getAllVolunteers } from '@/lib/firebase/volunteers';
+import { isProfileComplete } from '@/lib/api/users';
+import { getAllMissions } from '@/lib/api/missions';
+import { getAllVolunteers } from '@/lib/api/users';
 import { MissionClient, UserClient } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AffectationsGrid } from '@/components/features/affectations/affectations-grid';

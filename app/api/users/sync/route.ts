@@ -1,85 +1,59 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { db, users } from '@/lib/db';
+import { z } from 'zod';
 import { eq } from 'drizzle-orm';
+import { auth } from '@/auth';
+import { db, users } from '@/lib/db';
+
+const profileSchema = z.object({
+  firstName: z.string().trim().min(2),
+  lastName: z.string().trim().min(2),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/),
+});
 
 /**
  * POST /api/users/sync
- * Synchronise l'utilisateur Clerk avec la base de données Neon
+ * Enregistre le profil (prénom, nom, téléphone) de l'utilisateur connecté.
+ * La ligne users est créée par l'adaptateur Auth.js à la première connexion.
  */
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
+    const session = await auth();
+    const userId = session?.user?.id;
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { firstName, lastName, phone } = body;
+    const parsed = profileSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid fields' }, { status: 400 });
+    }
+    const { firstName, lastName, phone } = parsed.data;
 
-    if (!firstName || !lastName || !phone) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    const [updated] = await db
+      .update(users)
+      .set({
+        firstName,
+        lastName,
+        phone,
+        name: `${firstName} ${lastName}`,
+        dataProcessingConsent: true,
+        consentDate: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updated) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Récupérer l'email depuis Clerk
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
-    const email = clerkUser.emailAddresses?.[0]?.emailAddress;
-
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email not found' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (existingUser) {
-      // Mettre à jour l'utilisateur existant
-      await db
-        .update(users)
-        .set({
-          firstName,
-          lastName,
-          phone,
-          email,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId));
-
-      return NextResponse.json({ message: 'User updated', user: existingUser });
-    } else {
-      // Créer un nouvel utilisateur
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          id: userId,
-          email,
-          firstName,
-          lastName,
-          phone,
-          role: 'volunteer',
-          dataProcessingConsent: true,
-          communicationsConsent: false,
-          consentDate: new Date(),
-        })
-        .returning();
-
-      return NextResponse.json({ message: 'User created', user: newUser });
-    }
+    return NextResponse.json({ message: 'User updated', user: updated });
   } catch (error) {
     console.error('Error syncing user:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

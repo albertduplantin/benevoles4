@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getMissionById, deleteMission, duplicateMission } from '@/lib/firebase/missions';
+import { getMissionById, deleteMission, duplicateMission } from '@/lib/api/missions';
 import { MissionClient } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { canEditMissionAsync, canDeleteMissionAsync } from '@/lib/utils/permissions';

@@ -4,7 +4,7 @@ import { MissionClient, UserClient } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getCategoryResponsibleByValue, getCategoryResponsiblesByValue } from './category-responsible-helper';
-import { getUserById } from '@/lib/firebase/users';
+import { getUserById } from '@/lib/api/users';
 
 /**
  * Génère un PDF avec la liste des bénévoles d'une mission

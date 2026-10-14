@@ -1,4 +1,4 @@
-import { Timestamp, FieldValue } from 'firebase/firestore';
+
 
 /**
  * Catégorie de mission stockée dans Firestore
@@ -10,8 +10,8 @@ export interface MissionCategoryDB {
   group: string; // Groupe parent (ex: "Accueil public et professionnels")
   order: number; // Ordre d'affichage dans le groupe
   active: boolean; // Catégorie active ou archivée
-  createdAt: Timestamp | Date | FieldValue;
-  updatedAt?: Timestamp | Date | FieldValue;
+  createdAt: Date;
+  updatedAt?: Date;
   createdBy: string; // UID de l'admin qui a créé
 }
 

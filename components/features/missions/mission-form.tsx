@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createMission, updateMission } from '@/lib/firebase/missions';
+import { createMission, updateMission } from '@/lib/api/missions';
 import { missionSchema, MissionInput } from '@/lib/validations/mission';
 import { MissionClient } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
+import { getGroupedCategories } from '@/lib/api/categories';
 import { MissionCategoryClient } from '@/types/category';
-import { getAdminSettings } from '@/lib/firebase/admin-settings';
+import { getAdminSettings } from '@/lib/api/settings';
 
 // Fonction pour générer tous les jours entre deux dates
 function generateFestivalDays(startDate: Date, endDate: Date): Array<{ date: string; label: string }> {

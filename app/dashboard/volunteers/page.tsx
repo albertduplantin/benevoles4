@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isProfileComplete } from '@/lib/firebase/users';
+import { isProfileComplete } from '@/lib/api/users';
 import {
   getAllVolunteers,
   updateVolunteerInfo,
@@ -11,8 +11,8 @@ import {
   deleteVolunteer,
   adminRegisterVolunteer,
   adminUnregisterVolunteer,
-} from '@/lib/firebase/volunteers';
-import { getAllMissions } from '@/lib/firebase/missions';
+} from '@/lib/api/users';
+import { getAllMissions } from '@/lib/api/missions';
 import { UserClient, MissionClient } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

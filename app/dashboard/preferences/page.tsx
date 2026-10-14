@@ -21,9 +21,9 @@ import {
   Loader2,
   HeartIcon,
 } from 'lucide-react';
-import { updateVolunteerPreferences } from '@/lib/firebase/preferences';
-import { getGroupedCategories } from '@/lib/firebase/mission-categories-db';
-import { getAdminSettings } from '@/lib/firebase/admin-settings';
+import { updateVolunteerPreferences } from '@/lib/api/users';
+import { getGroupedCategories } from '@/lib/api/categories';
+import { getAdminSettings } from '@/lib/api/settings';
 import { MissionCategoryClient, VolunteerPreferences } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
