@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getUserById } from '@/lib/api/users';
@@ -29,21 +30,28 @@ export function useAuth() {
     staleTime: 60_000,
   });
 
-  const user = sessionUser
-    ? {
-        // Valeurs par défaut pour que les pages ne plantent pas avant l'arrivée du profil
-        consents: { dataProcessing: false, communications: false, consentDate: new Date() },
-        createdAt: new Date(),
-        ...sessionUser,
-        ...(profile ?? {}),
-        uid: sessionUser.id,
-        role: profile?.role ?? sessionUser.role ?? 'volunteer',
-        firstName: profile?.firstName ?? sessionUser.firstName ?? '',
-        lastName: profile?.lastName ?? sessionUser.lastName ?? '',
-        phone: profile?.phone ?? sessionUser.phone ?? '',
-        responsibleForCategories: profile?.responsibleForCategories ?? sessionUser.responsibleForCategories ?? [],
-      }
-    : null;
+  // Référence stable : les pages mettent `user` dans les dépendances de leurs effets,
+  // un nouvel objet à chaque rendu provoquerait des boucles de rechargement.
+  const user = useMemo(
+    () =>
+      sessionUser
+        ? {
+            // Valeurs par défaut pour que les pages ne plantent pas avant l'arrivée du profil
+            consents: { dataProcessing: false, communications: false, consentDate: new Date(0) },
+            createdAt: new Date(0),
+            ...sessionUser,
+            ...(profile ?? {}),
+            uid: sessionUser.id,
+            role: profile?.role ?? sessionUser.role ?? 'volunteer',
+            firstName: profile?.firstName ?? sessionUser.firstName ?? '',
+            lastName: profile?.lastName ?? sessionUser.lastName ?? '',
+            phone: profile?.phone ?? sessionUser.phone ?? '',
+            responsibleForCategories:
+              profile?.responsibleForCategories ?? sessionUser.responsibleForCategories ?? [],
+          }
+        : null,
+    [sessionUser, profile]
+  );
 
   return {
     user: user as any,

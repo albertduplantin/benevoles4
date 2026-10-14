@@ -57,7 +57,7 @@ export const slot = (offsetDays, startHour = 10, durationH = 2) => {
 /** Supprime toutes les données créées par ce run */
 export async function cleanup() {
   const like = `${RUN}%`;
-  await sql`DELETE FROM notifications WHERE user_id LIKE ${like} OR mission_id LIKE ${like}`;
+  await sql`DELETE FROM notifications WHERE user_id LIKE ${like} OR volunteer_id LIKE ${like} OR mission_id LIKE ${like}`;
   await sql`DELETE FROM missions WHERE created_by LIKE ${like} OR title LIKE ${`${RUN}%`}`;
   await sql`DELETE FROM category_responsibles WHERE responsible_id LIKE ${like}`;
   await sql`DELETE FROM mission_categories WHERE id LIKE ${like}`;
