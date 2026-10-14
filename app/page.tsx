@@ -2,117 +2,107 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import { ArrowRightIcon, CalendarCheckIcon, ClapperboardIcon, HeartHandshakeIcon, UsersIcon } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+
+const HIGHLIGHTS = [
+  {
+    icon: ClapperboardIcon,
+    title: 'Choisissez vos missions',
+    text: "Accueil, bar, technique, communication : trouvez ce qui vous ressemble et s'adapte à vos disponibilités.",
+  },
+  {
+    icon: CalendarCheckIcon,
+    title: 'Votre planning en un coup d’œil',
+    text: 'Retrouvez vos créneaux, ajoutez-les à votre agenda et gardez le fil, même depuis votre téléphone.',
+  },
+  {
+    icon: UsersIcon,
+    title: 'Une équipe, pas une liste',
+    text: 'Vos responsables de catégorie vous accompagnent et vous prévenez en un clic si quelque chose change.',
+  },
+];
 
 export default function Home() {
   const { user, loading, isProfileComplete } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
-
-    // Si l'utilisateur est connecté
-    if (user) {
-      // Si le profil est complet, rediriger vers dashboard
-      if (isProfileComplete) {
-        router.push('/dashboard/missions');
-      }
-      // Sinon, rediriger vers complete-profile
-      else {
-        router.push('/auth/complete-profile');
-      }
-    }
+    if (loading || !user) return;
+    router.push(isProfileComplete ? '/dashboard/missions' : '/auth/complete-profile');
   }, [loading, user, isProfileComplete, router]);
 
-  // Afficher un loader pendant la vérification
-  if (loading) {
+  if (loading || user) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement...</p>
-        </div>
+      <main className="flex min-h-screen items-center justify-center bg-blue-950">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold-400 border-t-transparent" />
       </main>
     );
   }
 
-  // Si utilisateur connecté, ne rien afficher (redirection en cours)
-  if (user) {
-    return null;
-  }
-
-  // Page d'accueil pour utilisateurs non connectés
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white p-8">
-      <div className="text-center space-y-8 max-w-4xl">
-        {/* En-tête */}
-        <div className="space-y-4">
-          <div className="text-6xl mb-4">🎬</div>
-          <h1 className="text-5xl font-bold text-gray-900">
-            Festival Films Courts de Dinan
+    <main className="min-h-screen bg-background">
+      {/* Hero : écran de projection */}
+      <section className="relative overflow-hidden bg-blue-950 text-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.5_0.2_285/0.55),transparent_70%)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold-400/60 to-transparent"
+        />
+        <div className="relative mx-auto flex max-w-4xl flex-col items-center px-6 py-20 text-center sm:py-28">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold-400/40 bg-gold-400/10 px-4 py-1.5 text-sm font-medium text-gold-300">
+            <HeartHandshakeIcon className="h-4 w-4" />
+            Espace des bénévoles
+          </span>
+          <h1 className="text-balance text-4xl font-semibold leading-tight sm:text-6xl">
+            Festival Films Courts <span className="text-gold-400">de Dinan</span>
           </h1>
-          <h2 className="text-2xl text-gray-600 font-medium">
-            Plateforme de Gestion des Bénévoles
-          </h2>
-          <p className="text-xl text-blue-600 font-semibold">
-            📅 19-23 novembre 2025
+          <p className="mt-6 max-w-xl text-balance text-lg text-blue-100">
+            Faites vivre le festival avec nous. Choisissez vos missions, suivez votre planning et retrouvez l’équipe, au même endroit.
           </p>
+          <div className="mt-10 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <Link
+              href="/auth/login"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-gold-400 px-8 text-base font-semibold text-blue-950 shadow-lg shadow-gold-400/20 transition hover:bg-gold-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-950"
+            >
+              Je rejoins l’équipe
+              <ArrowRightIcon className="h-5 w-5" />
+            </Link>
+          </div>
+          <p className="mt-4 text-sm text-blue-200">Connexion en un clic avec votre compte Google.</p>
         </div>
+      </section>
 
-        {/* Description */}
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
-          <p className="text-lg text-gray-700 leading-relaxed">
-            Rejoignez l'aventure du Festival Films Courts de Dinan ! 
-            Inscrivez-vous pour participer en tant que bénévole et 
-            accédez à votre tableau de bord personnalisé.
-          </p>
+      {/* Points clés */}
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <div className="grid gap-6 md:grid-cols-3">
+          {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="rounded-2xl border bg-card p-6 shadow-sm">
+              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gold-100 text-gold-700">
+                <Icon className="h-6 w-6" />
+              </div>
+              <h2 className="text-lg font-semibold">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
+            </div>
+          ))}
         </div>
+      </section>
 
-        {/* Boutons d'action */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          <Link href="/auth/login">
-            <button className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-              Se connecter
-            </button>
+      <footer className="border-t py-8 text-center text-sm text-muted-foreground">
+        <p>Festival Films Courts de Dinan</p>
+        <p className="mt-2 space-x-4">
+          <Link href="/legal/privacy" className="underline-offset-4 hover:underline">
+            Confidentialité
           </Link>
-          <Link href="/auth/register">
-            <button className="w-full sm:w-auto px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 text-lg font-semibold rounded-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-              Créer un compte
-            </button>
+          <Link href="/legal/terms" className="underline-offset-4 hover:underline">
+            Conditions d’utilisation
           </Link>
-        </div>
-
-        {/* Points clés */}
-        <div className="grid md:grid-cols-3 gap-6 mt-12">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="text-3xl mb-3">📋</div>
-            <h3 className="font-semibold text-lg mb-2">Missions variées</h3>
-            <p className="text-gray-600 text-sm">
-              Choisissez parmi de nombreuses missions adaptées à vos disponibilités
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="text-3xl mb-3">📅</div>
-            <h3 className="font-semibold text-lg mb-2">Planning personnalisé</h3>
-            <p className="text-gray-600 text-sm">
-              Visualisez vos missions sur un calendrier interactif
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="text-3xl mb-3">🤝</div>
-            <h3 className="font-semibold text-lg mb-2">Communauté</h3>
-            <p className="text-gray-600 text-sm">
-              Coordonnez-vous avec les autres bénévoles et responsables
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-16 text-sm text-gray-500">
-          <p>© 2025 Festival Films Courts de Dinan - Tous droits réservés</p>
-        </div>
-      </div>
+        </p>
+      </footer>
     </main>
   );
 }

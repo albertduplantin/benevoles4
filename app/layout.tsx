@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import { SessionProvider } from 'next-auth/react';
 import { auth } from '@/auth';
@@ -9,7 +9,8 @@ import { NetworkStatus } from '@/components/features/pwa/network-status';
 import { ServiceWorkerRegister } from '@/components/features/pwa/service-worker-register';
 import { Toaster } from 'sonner';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', axes: ['opsz'] });
 
 export const metadata: Metadata = {
   title: 'Festival Films Courts de Dinan - Gestion des Bénévoles',
@@ -25,7 +26,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#000000',
+  themeColor: '#2a1f6b',
 };
 
 export default async function RootLayout({
@@ -38,7 +39,7 @@ export default async function RootLayout({
   return (
     <SessionProvider session={session}>
       <html lang="fr">
-        <body className={inter.className}>
+        <body className={`${inter.variable} ${fraunces.variable} font-sans antialiased`}>
           <QueryProvider>
             <ServiceWorkerRegister />
             {children}

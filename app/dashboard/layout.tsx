@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
 import { Header } from '@/components/layouts/header';
+import { BottomNav } from '@/components/layouts/bottom-nav';
 import { SupportBanner } from '@/components/features/support/support-banner';
 
 export default function DashboardLayout({
@@ -48,10 +49,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
       <SupportBanner />
-      <main className="container mx-auto px-4 py-6">{children}</main>
+      <main className="container mx-auto px-4 py-6 pb-24 md:pb-6">{children}</main>
+      <BottomNav />
     </div>
   );
 }

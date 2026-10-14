@@ -22,6 +22,7 @@ import { NotificationBell } from '@/components/features/notifications/notificati
 import {
   MenuIcon,
   HomeIcon,
+  ClapperboardIcon,
   ListIcon,
   CalendarIcon,
   UsersIcon,
@@ -140,14 +141,16 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b bg-card/95 shadow-sm backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo et titre */}
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl">
-            <CalendarIcon className="h-6 w-6 text-blue-600" />
-            <span className="hidden sm:inline">Festival Bénévoles</span>
-            <span className="sm:hidden">FB</span>
+            <ClapperboardIcon className="h-6 w-6 text-gold-500" />
+            <span className="font-display text-blue-900">
+              <span className="hidden sm:inline">Festival Bénévoles</span>
+              <span className="sm:hidden">Festival</span>
+            </span>
           </Link>
         </div>
 
@@ -162,7 +165,7 @@ export function Header() {
                 href={item.href}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-blue-100 text-blue-700'
+                    ? 'bg-blue-100 text-blue-800'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -302,7 +305,7 @@ export function Header() {
                       onClick={() => setMobileMenuOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
                         active
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-blue-100 text-blue-800'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
