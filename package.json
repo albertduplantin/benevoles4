@@ -12,7 +12,8 @@
     "prepare": "husky install",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test:api": "node --env-file=.env.local --test --test-reporter=spec tests/api.test.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

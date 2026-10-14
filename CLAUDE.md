@@ -40,6 +40,11 @@ Ne jamais afficher ni committer `.env*`. `*firebase-adminsdk*.json` est ignoré 
 - `npx tsc --noEmit` : typecheck ; `npm run build` : build de production (`AUTH_SECRET` requis)
 - Migration SQL : exécuter le fichier de `drizzle/` dans l'éditeur SQL de Neon
 
+## Tests
+- `npm run test:api` : tests d'API et de pages (12 scénarios, ~15 s). Le serveur doit tourner (`npm run dev`) ; `BASE_URL=https://... npm run test:api` pour tester un déploiement.
+- `tests/helpers.mjs` signe un cookie de session Auth.js avec `AUTH_SECRET` : pas besoin de Google. Toutes les données créées sont préfixées `test_` et supprimées à la fin.
+- Après un changement, lancer les tests et ne lire que les échecs (`| grep -E "✖|fail"`).
+
 ## Points d'attention
 - Emails : sans domaine vérifié, Resend n'envoie qu'au propriétaire du compte.
 - Notifications push (FCM) abandonnées ; notifications in-app (table `notifications`, polling 30 s) + email.

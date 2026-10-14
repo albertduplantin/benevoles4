@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authConfig } from './auth.config';
+import { authConfig, isPublicPath } from './auth.config';
 
 // Instance Edge sans adaptateur : lit uniquement le cookie JWT
 const { auth } = NextAuth(authConfig);
@@ -10,9 +10,13 @@ export default auth((request) => {
   const isLoggedIn = !!request.auth?.user;
 
   // Les API renvoient 401 en JSON plutôt qu'une redirection HTML
-  const isPublicApi = pathname.startsWith('/api/auth/') || pathname === '/api/personal';
-  if (pathname.startsWith('/api/') && !isPublicApi && !isLoggedIn) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isLoggedIn && !isPublicPath(pathname)) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Connecté : inutile de revoir la page de connexion

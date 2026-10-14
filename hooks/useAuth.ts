@@ -1,6 +1,8 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getUserById } from '@/lib/api/users';
 
 export interface UserMetadata {
   firstName: string;
@@ -11,21 +13,35 @@ export interface UserMetadata {
 
 /**
  * Hook d'authentification basé sur Auth.js.
- * Les données (rôle, prénom, nom, téléphone) viennent de la table users via le JWT de session.
+ * La session donne l'identité et le rôle ; le profil complet (consentements, préférences,
+ * date de création...) est chargé depuis la base et mis en cache 1 minute.
  */
 export function useAuth() {
   const { data: session, status, update } = useSession();
+  const queryClient = useQueryClient();
   const sessionUser = session?.user;
+  const id = sessionUser?.id;
+
+  const { data: profile } = useQuery({
+    queryKey: ['me', id],
+    queryFn: () => getUserById(id!),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
 
   const user = sessionUser
     ? {
+        // Valeurs par défaut pour que les pages ne plantent pas avant l'arrivée du profil
+        consents: { dataProcessing: false, communications: false, consentDate: new Date() },
+        createdAt: new Date(),
         ...sessionUser,
+        ...(profile ?? {}),
         uid: sessionUser.id,
-        role: sessionUser.role || 'volunteer',
-        firstName: sessionUser.firstName || '',
-        lastName: sessionUser.lastName || '',
-        phone: sessionUser.phone || '',
-        responsibleForCategories: sessionUser.responsibleForCategories || [],
+        role: profile?.role ?? sessionUser.role ?? 'volunteer',
+        firstName: profile?.firstName ?? sessionUser.firstName ?? '',
+        lastName: profile?.lastName ?? sessionUser.lastName ?? '',
+        phone: profile?.phone ?? sessionUser.phone ?? '',
+        responsibleForCategories: profile?.responsibleForCategories ?? sessionUser.responsibleForCategories ?? [],
       }
     : null;
 
@@ -35,6 +51,7 @@ export function useAuth() {
     loading: status === 'loading',
     // Recharge le profil depuis la base (après modification du profil par exemple)
     refreshUser: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
       await update();
     },
 
