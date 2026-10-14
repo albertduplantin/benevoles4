@@ -190,3 +190,36 @@ h3,
 h1 {
   text-transform: uppercase;
 }
+
+/* Calendrier (react-big-calendar) aux couleurs du festival */
+.rbc-toolbar button {
+  border-radius: 0.5rem;
+  color: #121110;
+}
+.rbc-toolbar button:hover,
+.rbc-toolbar button:focus {
+  background: #fbeccd;
+  border-color: #ebbb4f;
+  color: #121110;
+}
+.rbc-toolbar button.rbc-active,
+.rbc-toolbar button.rbc-active:hover {
+  background: #ebbb4f;
+  border-color: #d9a62f;
+  color: #121110;
+  box-shadow: none;
+}
+.rbc-today {
+  background-color: #fdf7e8;
+}
+.rbc-off-range-bg {
+  background: #f7f5ef;
+}
+.rbc-event {
+  background-color: #1c1a15;
+  border-radius: 0.375rem;
+}
+.rbc-show-more {
+  color: #8f6b17;
+  font-weight: 600;
+}

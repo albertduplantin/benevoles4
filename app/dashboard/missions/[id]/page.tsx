@@ -273,7 +273,7 @@ export default function MissionDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen md:p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -423,7 +423,7 @@ export default function MissionDetailPage() {
                 <Button
                   onClick={handleRegister}
                   disabled={isRegistering}
-                  className="flex-1"
+                  className="h-12 flex-1 text-base"
                 >
                   {isRegistering ? 'Inscription...' : 'Je m\'inscris'}
                 </Button>
@@ -434,7 +434,7 @@ export default function MissionDetailPage() {
                   onClick={handleUnregister}
                   disabled={isRegistering}
                   variant="outline"
-                  className="flex-1"
+                  className="h-12 flex-1 border-green-500 text-base text-green-700"
                 >
                   {isRegistering ? 'Désinscription...' : 'Me désinscrire'}
                 </Button>
