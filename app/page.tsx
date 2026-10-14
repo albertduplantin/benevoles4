@@ -47,7 +47,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-blue-950 text-white">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,oklch(0.5_0.2_285/0.55),transparent_70%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgb(235_187_79/0.22),transparent_70%)]"
         />
         <div
           aria-hidden

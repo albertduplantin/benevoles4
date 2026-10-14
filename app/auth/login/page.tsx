@@ -35,7 +35,7 @@ export default async function LoginPage({
       <aside className="relative hidden overflow-hidden bg-blue-950 text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div
           aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(70%_60%_at_30%_20%,oklch(0.5_0.2_285/0.5),transparent_70%)]"
+          className="absolute inset-0 bg-[radial-gradient(70%_60%_at_30%_20%,rgb(235_187_79/0.2),transparent_70%)]"
         />
         <Link href="/" className="relative flex items-center gap-2 text-lg font-semibold">
           <ClapperboardIcon className="h-6 w-6 text-gold-400" />
