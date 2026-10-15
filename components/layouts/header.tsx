@@ -316,9 +316,9 @@ export function Header() {
                 <MenuIcon className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-80">
+            <SheetContent side="right" className="flex w-80 flex-col gap-0">
               {/* Profil utilisateur en haut */}
-              <div className="flex items-center gap-3 pb-4 border-b mb-4">
+              <div className="mb-4 flex shrink-0 items-center gap-3 border-b pb-4">
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={user.photoURL || undefined} alt={user.firstName} />
                   <AvatarFallback style={{ backgroundColor: getAvatarColor(user.uid) }}>
@@ -338,8 +338,8 @@ export function Header() {
                 </div>
               </div>
 
-              {/* Navigation Mobile */}
-              <nav className="flex flex-col gap-2">
+              {/* Navigation Mobile : défile si la liste est longue (menu admin) */}
+              <nav className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2">
                 {visibleNavItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
@@ -388,19 +388,21 @@ export function Header() {
                   <BellIcon className="h-5 w-5" />
                   Notifications
                 </Link>
+              </nav>
 
-                {/* Déconnexion */}
+              {/* Déconnexion : épinglée en bas du menu, toujours visible sans défiler */}
+              <div className="shrink-0 border-t pt-3 pb-[env(safe-area-inset-bottom)]">
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     handleSignOut();
                   }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 w-full text-left"
+                  className="flex h-12 w-full items-center gap-3 rounded-md px-4 text-base font-medium text-red-600 hover:bg-red-50"
                 >
                   <LogOutIcon className="h-5 w-5" />
                   Se déconnecter
                 </button>
-              </nav>
+              </div>
             </SheetContent>
           </Sheet>
         </div>

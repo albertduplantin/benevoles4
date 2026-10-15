@@ -7,11 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { getInitials, getAvatarColor } from '@/lib/utils/avatar';
 import { formatDateTime } from '@/lib/utils/date';
 import { updateUserPreferences } from '@/lib/api/users';
 import { toast } from 'sonner';
+import { signOut } from 'next-auth/react';
 import {
   UserIcon,
   MailIcon,
@@ -276,8 +278,15 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        <Button
+          variant="outline"
+          className="h-12 w-full border-red-200 text-base text-red-700 hover:bg-red-50"
+          onClick={() => signOut({ callbackUrl: '/auth/login' })}
+        >
+          Se déconnecter
+        </Button>
       </div>
     </div>
   );
 }
-
