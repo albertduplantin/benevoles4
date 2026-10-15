@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { db, missions } from '@/lib/db';
 import { handle, json, requireUser, HttpError, type SessionUser } from '@/lib/server/api';
 import { toMissionClient } from '@/lib/server/mappers';
-import { getMission, rebalance } from '@/lib/server/missions';
+import { after } from 'next/server';
+import { getMission, notifyPromoted, rebalance } from '@/lib/server/missions';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -68,8 +69,10 @@ export const PUT = handle(async (request: Request, { params }: Ctx) => {
 
   // Nouveau quota ou nouveau statut : réaligne published/full et promeut la liste d'attente
   if (data.maxVolunteers !== undefined || data.status === 'published') {
-    await rebalance(id);
-    return json({ mission: toMissionClient(await getMission(id)) });
+    const promoted = await rebalance(id);
+    const fresh = await getMission(id);
+    after(() => notifyPromoted(fresh, promoted).catch((e) => console.error('Notification error:', e)));
+    return json({ mission: toMissionClient(fresh) });
   }
   return json({ mission: toMissionClient(updated) });
 });

@@ -1,7 +1,9 @@
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, users, missions } from '@/lib/db';
+import { after } from 'next/server';
 import { handle, json, requireUser, HttpError } from '@/lib/server/api';
+import { getMission, notifyPromoted, rebalance } from '@/lib/server/missions';
 import { toUserClient } from '@/lib/server/mappers';
 import { generatePersonalToken } from '@/lib/utils/token';
 
@@ -127,6 +129,11 @@ export const DELETE = handle(async (_request: Request, { params }: Ctx) => {
   const { id } = await params;
   if (id === caller.id) throw new HttpError(400, 'Vous ne pouvez pas supprimer votre propre compte');
 
+  const affected = await db
+    .select({ id: missions.id })
+    .from(missions)
+    .where(sql`${id} = ANY(${missions.volunteers})`);
+
   await db
     .update(missions)
     .set({
@@ -141,5 +148,13 @@ export const DELETE = handle(async (_request: Request, { params }: Ctx) => {
   await db.update(missions).set({ createdBy: caller.id }).where(eq(missions.createdBy, id));
 
   await db.delete(users).where(eq(users.id, id));
+
+  // Les places libérées profitent aux bénévoles en liste d'attente
+  after(async () => {
+    for (const { id: missionId } of affected) {
+      const promoted = await rebalance(missionId);
+      if (promoted.length) await notifyPromoted(await getMission(missionId), promoted).catch(() => {});
+    }
+  });
   return json({ success: true });
 });

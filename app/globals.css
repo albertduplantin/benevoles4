@@ -223,3 +223,19 @@ h1 {
   color: #8f6b17;
   font-weight: 600;
 }
+
+/* Texte plus grand (bouton Texte plus grand) : tout le site suit, Tailwind utilise des rem */
+html.text-large {
+  font-size: 118%;
+}
+
+/* Impression : on ne garde que le contenu */
+@media print {
+  header,
+  nav {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+}

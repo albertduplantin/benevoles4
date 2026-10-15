@@ -17,8 +17,8 @@ export function exportMissionVolunteersExcel(
 
   // Préparer les données
   const data = volunteers.map((volunteer) => ({
-    Nom: volunteer.firstName,
-    Prénom: volunteer.lastName,
+    Nom: volunteer.lastName,
+    Prénom: volunteer.firstName,
     Email: volunteer.email,
     Téléphone: volunteer.phone || 'N/A',
     Rôle: getRoleLabel(volunteer.role),

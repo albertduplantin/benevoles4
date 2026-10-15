@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { signOut } from 'next-auth/react';
+import { TextSizeToggle } from '@/components/layouts/text-size-toggle';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -27,6 +28,7 @@ import {
   CalendarIcon,
   UsersIcon,
   ChevronDownIcon,
+  UploadIcon,
   LogOutIcon,
   UserIcon,
   CheckCircle2Icon,
@@ -98,6 +100,12 @@ const navigation: NavItem[] = [
     label: 'Bénévoles Email',
     href: '/dashboard/admin/email-only',
     icon: MailIcon,
+    roles: ['admin'],
+  },
+  {
+    label: 'Importer des bénévoles',
+    href: '/dashboard/admin/import',
+    icon: UploadIcon,
     roles: ['admin'],
   },
   {
@@ -245,6 +253,8 @@ export function Header() {
             </DropdownMenu>
           )}
           
+          <TextSizeToggle className="hidden lg:inline-flex" />
+
           {/* Notifications en temps réel (admins et responsables) */}
           <NotificationBell />
           

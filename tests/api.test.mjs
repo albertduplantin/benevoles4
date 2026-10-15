@@ -216,3 +216,61 @@ test('profil incomplet : inscription refusée tant que nom, prénom et télépho
   assert.equal(sync.status, 200);
   assert.equal((await newcomer.client.post(`/api/missions/${m.id}/register`)).status, 200);
 });
+
+test('liste d attente : le bénévole promu est prévenu', async () => {
+  const a = await createUser('promoA');
+  const b = await createUser('promoB');
+  const m = (await admin.client.post('/api/missions', mk('promo', { maxVolunteers: 1, ...slot(8) }))).data.mission;
+  assert.equal((await a.client.post(`/api/missions/${m.id}/register`)).data.onWaitlist, false);
+  assert.equal((await b.client.post(`/api/missions/${m.id}/register`)).data.onWaitlist, true);
+  assert.equal((await a.client.del(`/api/missions/${m.id}/register`)).status, 200);
+  await new Promise((r) => setTimeout(r, 2000));
+  const notifs = (await b.client.get('/api/notifications')).data.notifications;
+  assert.ok(notifs.some((n) => n.missionId === m.id && /place/i.test(n.title)), 'notification de promotion reçue');
+  const cur = (await admin.client.get(`/api/missions/${m.id}`)).data.mission;
+  assert.deepEqual(cur.volunteers, [b.id]);
+});
+
+test('pointage : réservé aux responsables, présent/absent/effacé', async () => {
+  const v = await createUser('pointe');
+  const m = (await admin.client.post('/api/missions', mk('pointage', { maxVolunteers: 3, ...slot(9) }))).data.mission;
+  await admin.client.post(`/api/missions/${m.id}/volunteers`, { userId: v.id });
+  assert.equal((await v.client.put(`/api/missions/${m.id}/attendance`, { userId: v.id, present: true })).status, 403);
+  assert.equal((await admin.client.put(`/api/missions/${m.id}/attendance`, { userId: v.id, present: true })).status, 200);
+  let list = (await admin.client.get(`/api/missions/${m.id}/attendance`)).data.attendance;
+  assert.deepEqual(list, [{ userId: v.id, present: true }]);
+  await admin.client.put(`/api/missions/${m.id}/attendance`, { userId: v.id, present: false });
+  list = (await admin.client.get(`/api/missions/${m.id}/attendance`)).data.attendance;
+  assert.equal(list[0].present, false);
+  await admin.client.put(`/api/missions/${m.id}/attendance`, { userId: v.id, present: null });
+  assert.equal((await admin.client.get(`/api/missions/${m.id}/attendance`)).data.attendance.length, 0);
+  const stranger = await createUser('inconnu');
+  assert.equal((await admin.client.put(`/api/missions/${m.id}/attendance`, { userId: stranger.id, present: true })).status, 400);
+});
+
+test('import : crée les nouveaux, ignore les existants, signale les lignes invalides', async () => {
+  const mail = (n) => `${RUN}_imp${n}@test.invalid`;
+  const rows = [
+    { firstName: 'Anne', lastName: 'Martin', email: mail(1), phone: '0611111111' },
+    { firstName: 'Paul', lastName: 'Durand', email: mail(2) },
+    { firstName: '', lastName: 'Sansprenom', email: mail(3) },
+    { firstName: 'Doublon', lastName: 'Interne', email: mail(1) },
+    { firstName: 'Déjà', lastName: 'Là', email: `${v1.id}@test.invalid` },
+  ];
+  assert.equal((await v1.client.post('/api/users/import', { rows })).status, 403);
+  const res = await admin.client.post('/api/users/import', { rows });
+  assert.equal(res.status, 200, JSON.stringify(res.data));
+  assert.equal(res.data.created.length, 2);
+  assert.equal(res.data.skippedExisting, 1);
+  assert.equal(res.data.invalid.length, 2);
+  const again = await admin.client.post('/api/users/import', { rows: [rows[0]] });
+  assert.equal(again.data.created.length, 0, 'ré-import sans doublon');
+});
+
+test('rappels planifiés : refusés sans le bon secret', async () => {
+  const noAuth = await anonymous.get('/api/cron/reminders');
+  assert.equal(noAuth.status, 401);
+  const base = process.env.BASE_URL ?? 'http://localhost:3000';
+  const bad = await fetch(`${base}/api/cron/reminders`, { headers: { authorization: 'Bearer mauvais' } });
+  assert.equal(bad.status, 401);
+});

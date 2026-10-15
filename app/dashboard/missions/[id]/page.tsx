@@ -38,6 +38,7 @@ export default function MissionDetailPage() {
 
   const [mission, setMission] = useState<MissionClient | null>(null);
   const [participants, setParticipants] = useState<UserClient[]>([]);
+  const [attendanceMap, setAttendanceMap] = useState<Record<string, boolean>>({});
   const [categoryResponsibles, setCategoryResponsibles] = useState<UserClient[]>([]);
   const [isLoadingMission, setIsLoadingMission] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -150,6 +151,34 @@ export default function MissionDetailPage() {
 
     checkPermissions();
   }, [user, mission]);
+
+  // Pointage (présent/absent) : visible des admins et responsables de la catégorie
+  useEffect(() => {
+    if (!canManageVolunteers || !missionId) return;
+    fetch(`/api/missions/${missionId}/attendance`)
+      .then((r) => (r.ok ? r.json() : { attendance: [] }))
+      .then((d) => setAttendanceMap(Object.fromEntries(d.attendance.map((a: any) => [a.userId, a.present]))))
+      .catch(() => {});
+  }, [canManageVolunteers, missionId]);
+
+  const markAttendance = async (userId: string, present: boolean | null) => {
+    const previous = attendanceMap;
+    setAttendanceMap((m) => {
+      const next = { ...m };
+      if (present === null) delete next[userId];
+      else next[userId] = present;
+      return next;
+    });
+    const res = await fetch(`/api/missions/${missionId}/attendance`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, present }),
+    });
+    if (!res.ok) {
+      setAttendanceMap(previous);
+      toast.error('Pointage non enregistré');
+    }
+  };
 
   // Rafraîchir les participants après assignation
   const handleVolunteerAssigned = async () => {
@@ -588,8 +617,28 @@ export default function MissionDetailPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right text-sm text-muted-foreground">
+                      <div className="flex flex-col items-end gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center">
                         <p>{participant.phone}</p>
+                        {canManageVolunteers && (
+                          <div className="flex gap-1" role="group" aria-label="Pointage">
+                            <Button
+                              size="sm"
+                              variant={attendanceMap[participant.uid] === true ? 'default' : 'outline'}
+                              className={attendanceMap[participant.uid] === true ? 'bg-green-600 hover:bg-green-700' : ''}
+                              onClick={() => markAttendance(participant.uid, attendanceMap[participant.uid] === true ? null : true)}
+                            >
+                              Présent
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={attendanceMap[participant.uid] === false ? 'default' : 'outline'}
+                              className={attendanceMap[participant.uid] === false ? 'bg-red-600 hover:bg-red-700' : ''}
+                              onClick={() => markAttendance(participant.uid, attendanceMap[participant.uid] === false ? null : false)}
+                            >
+                              Absent
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

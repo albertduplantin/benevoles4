@@ -61,6 +61,7 @@ export async function cleanup() {
   await sql`DELETE FROM missions WHERE created_by LIKE ${like} OR title LIKE ${`${RUN}%`}`;
   await sql`DELETE FROM category_responsibles WHERE responsible_id LIKE ${like}`;
   await sql`DELETE FROM mission_categories WHERE id LIKE ${like}`;
-  await sql`DELETE FROM users WHERE id LIKE ${like}`;
+  await sql`DELETE FROM users WHERE id LIKE ${like} OR email LIKE ${`${RUN}%@test.invalid`}`;
+  await sql`DELETE FROM login_attempts WHERE email LIKE ${`${RUN}%`}`;
   await sql`UPDATE admin_settings SET registrations_blocked = false WHERE id = 'admin' AND updated_by LIKE ${like}`;
 }

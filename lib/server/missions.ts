@@ -3,6 +3,7 @@ import { db, missions, users, adminSettings, categoryResponsibles, notifications
 import type { Mission } from '@/lib/db';
 import { HttpError, newId } from './api';
 import { escapeHtml, sendEmail } from './email';
+import { renderNotificationEmail } from './notification-email';
 
 export async function getSettings() {
   const row = await db.query.adminSettings.findFirst({ where: eq(adminSettings.id, 'admin') });
@@ -275,4 +276,39 @@ export async function notifyRegistration(mission: Mission, volunteerId: string):
         })
       )
   );
+}
+
+const dateTimeFr = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris',
+});
+
+/** Prévient les bénévoles passés de la liste d'attente à « inscrit » (notification + email) */
+export async function notifyPromoted(mission: Mission, promotedIds: string[]): Promise<void> {
+  if (promotedIds.length === 0) return;
+  const base = process.env.NEXT_PUBLIC_APP_BASE_URL ?? '';
+  const when = mission.startDate ? ` le ${dateTimeFr.format(mission.startDate)}` : '';
+
+  for (const userId of promotedIds) {
+    const person = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!person) continue;
+    await createNotification({
+      userId,
+      type: 'new_assignment',
+      title: '🎉 Une place s’est libérée',
+      message: `Vous êtes inscrit(e) à la mission "${mission.title}"${when}`,
+      missionId: mission.id,
+      missionTitle: mission.title,
+    });
+    if (person.email && person.emailNotifications !== false) {
+      const { html, text } = renderNotificationEmail({
+        title: 'Une place s’est libérée !',
+        intro: `Bonne nouvelle ${escapeHtml(person.firstName)} : une place s’est libérée et vous êtes maintenant inscrit(e) à <strong>${escapeHtml(mission.title)}</strong>${escapeHtml(when)}.`,
+        buttonLabel: 'Voir la mission',
+        url: `${base}/dashboard/missions/${mission.id}`,
+      });
+      await sendEmail({ to: person.email, subject: `Une place s’est libérée : ${mission.title}`, html, text }).catch((e) =>
+        console.error('Promotion email error:', e)
+      );
+    }
+  }
 }

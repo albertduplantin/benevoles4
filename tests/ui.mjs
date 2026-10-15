@@ -11,7 +11,7 @@ try {
   const ctx = await browser.newContext();
   await ctx.addCookies([{ name: 'authjs.session-token', url: BASE_URL, httpOnly: true,
     value: await encode({ token: { sub: admin.id, name: 'Debug', email: `${admin.id}@test.invalid` }, secret: process.env.AUTH_SECRET, salt: 'authjs.session-token' }) }]);
-  for (const path of ['/dashboard', `/dashboard/missions/${m.id}`, '/dashboard/profile', '/dashboard/preferences', '/dashboard/overview', '/dashboard/volunteers', '/dashboard/affectations', '/dashboard/missions/new', '/dashboard/admin/categories', '/dashboard/admin/category-responsibles', '/dashboard/admin/email-only', '/dashboard/admin/notifications', '/dashboard/admin/search-volunteers', '/dashboard/volunteer-call']) {
+  for (const path of ['/dashboard', `/dashboard/missions/${m.id}`, '/dashboard/profile', '/dashboard/preferences', '/dashboard/overview', '/dashboard/volunteers', '/dashboard/affectations', '/dashboard/missions/new', '/dashboard/admin/categories', '/dashboard/admin/category-responsibles', '/dashboard/admin/email-only', '/dashboard/admin/notifications', '/dashboard/admin/search-volunteers', '/dashboard/volunteer-call', '/dashboard/mon-planning', '/dashboard/admin/import']) {
     const page = await ctx.newPage();
     let errs = 0, first = '';
     const own = (u) => u.startsWith(BASE_URL);

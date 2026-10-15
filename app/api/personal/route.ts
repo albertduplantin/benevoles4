@@ -2,7 +2,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db, missions, users } from '@/lib/db';
 import { handle, json, HttpError } from '@/lib/server/api';
 import { toMissionClient, toUserClient } from '@/lib/server/mappers';
-import { unregisterVolunteer } from '@/lib/server/missions';
+import { after } from 'next/server';
+import { notifyPromoted, unregisterVolunteer } from '@/lib/server/missions';
 import { isValidTokenFormat } from '@/lib/utils/token';
 
 /**
@@ -48,6 +49,7 @@ export const DELETE = handle(async (request: Request) => {
   const missionId = new URL(request.url).searchParams.get('missionId');
   if (!missionId) throw new HttpError(400, 'missionId requis');
 
-  const { mission } = await unregisterVolunteer(missionId, user.id);
+  const { mission, promoted } = await unregisterVolunteer(missionId, user.id);
+  after(() => notifyPromoted(mission, promoted).catch((e) => console.error('Notification error:', e)));
   return json({ mission: toMissionClient(mission) });
 });

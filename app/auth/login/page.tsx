@@ -2,12 +2,14 @@ import Link from 'next/link';
 import { ClapperboardIcon, MailIcon, PhoneIcon } from 'lucide-react';
 import { emailLoginEnabled } from '@/auth';
 import { SUPPORT_PHONE } from '@/lib/server/magic-link-email';
+import { TextSizeToggle } from '@/components/layouts/text-size-toggle';
 import { signInWithEmail, signInWithGoogle } from './actions';
 
 const ERROR_MESSAGES: Record<string, string> = {
   Verification: 'Ce lien a déjà servi ou a expiré. Pas de souci : demandez-en un nouveau ci-dessous.',
   InvalidEmail: 'Cette adresse email ne semble pas correcte. Vérifiez-la et réessayez.',
   EmailSendFailed: "Nous n'avons pas pu envoyer l'email. Réessayez dans un instant, ou appelez-nous.",
+  TooManyRequests: 'Vous avez déjà demandé plusieurs liens. Patientez 10 minutes et regardez bien vos emails (et vos courriers indésirables) : le dernier lien reçu fonctionne.',
   AccessDenied: 'Accès refusé.',
 };
 
@@ -61,6 +63,10 @@ export default async function LoginPage({
               <ClapperboardIcon className="h-5 w-5 text-gold-500" />
               Festival Films Courts de Dinan
             </Link>
+          </div>
+
+          <div className="flex justify-end">
+            <TextSizeToggle />
           </div>
 
           <div>

@@ -6,7 +6,7 @@ import type { Mission } from '@/lib/db';
 import { handle, json, requireUser, HttpError } from '@/lib/server/api';
 import { toMissionClient } from '@/lib/server/mappers';
 import { escapeHtml, sendEmail } from '@/lib/server/email';
-import { createNotification, getMission, registerVolunteer, unregisterVolunteer } from '@/lib/server/missions';
+import { createNotification, getMission, notifyPromoted, registerVolunteer, unregisterVolunteer } from '@/lib/server/missions';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -74,7 +74,10 @@ export const DELETE = handle(async (request: Request, { params }: Ctx) => {
   const parsed = bodySchema.safeParse(await request.json());
   if (!parsed.success) throw new HttpError(400, 'userId requis');
 
-  const { mission } = await unregisterVolunteer(id, parsed.data.userId, { byAdmin: true });
-  after(() => notifyVolunteer(parsed.data.userId, mission, false).catch((e) => console.error('Notification error:', e)));
+  const { mission, promoted } = await unregisterVolunteer(id, parsed.data.userId, { byAdmin: true });
+  after(async () => {
+    await notifyVolunteer(parsed.data.userId, mission, false).catch((e) => console.error('Notification error:', e));
+    await notifyPromoted(mission, promoted).catch((e) => console.error('Notification error:', e));
+  });
   return json({ mission: toMissionClient(mission) });
 });

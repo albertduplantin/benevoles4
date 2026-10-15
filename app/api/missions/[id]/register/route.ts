@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, users } from '@/lib/db';
 import { handle, json, requireUser, HttpError } from '@/lib/server/api';
 import { toMissionClient } from '@/lib/server/mappers';
-import { getMission, joinWaitlist, leaveWaitlist, notifyRegistration, registerVolunteer, unregisterVolunteer } from '@/lib/server/missions';
+import { getMission, joinWaitlist, leaveWaitlist, notifyPromoted, notifyRegistration, registerVolunteer, unregisterVolunteer } from '@/lib/server/missions';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -45,5 +45,6 @@ export const DELETE = handle(async (request: Request, { params }: Ctx) => {
   }
 
   const { mission, promoted } = await unregisterVolunteer(id, user.id);
+  after(() => notifyPromoted(mission, promoted).catch((e) => console.error('Notification error:', e)));
   return json({ mission: toMissionClient(mission), promoted });
 });

@@ -10,7 +10,9 @@ export function isPublicPath(pathname: string): boolean {
     pathname.startsWith('/legal') ||
     // Accès par jeton personnel pour les bénévoles "email-only" (sans connexion)
     pathname === '/mes-missions' ||
-    pathname === '/api/personal'
+    pathname === '/api/personal' ||
+    // Tâches planifiées Vercel : protégées par CRON_SECRET dans la route elle-même
+    pathname.startsWith('/api/cron/')
   );
 }
 

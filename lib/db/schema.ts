@@ -185,6 +185,44 @@ export const notifications = pgTable('notifications', {
 });
 
 /**
+ * Demandes de lien de connexion : sert à limiter les envois (anti-abus de la boîte d'envoi)
+ */
+export const loginAttempts = pgTable('login_attempts', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  ip: text('ip'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+/**
+ * Rappels de mission déjà envoyés (un par bénévole et par mission)
+ */
+export const reminders = pgTable(
+  'reminders',
+  {
+    missionId: text('mission_id').notNull().references(() => missions.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    sentAt: timestamp('sent_at').notNull().defaultNow(),
+  },
+  (r) => [primaryKey({ columns: [r.missionId, r.userId] })]
+);
+
+/**
+ * Pointage le jour J : présence d'un bénévole à une mission
+ */
+export const attendance = pgTable(
+  'attendance',
+  {
+    missionId: text('mission_id').notNull().references(() => missions.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    present: boolean('present').notNull(),
+    markedBy: text('marked_by').notNull(),
+    markedAt: timestamp('marked_at').notNull().defaultNow(),
+  },
+  (a) => [primaryKey({ columns: [a.missionId, a.userId] })]
+);
+
+/**
  * Slots table - Pour missions avec créneaux horaires spécifiques
  */
 export const slots = pgTable('slots', {

@@ -51,3 +51,6 @@ next-env.d.ts
 **/public/fallback-*.js
 
 .vercel
+
+# sauvegardes locales de la base (données personnelles)
+backups/

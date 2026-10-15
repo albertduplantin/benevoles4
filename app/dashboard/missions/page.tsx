@@ -10,6 +10,7 @@ import {
   HourglassIcon,
   MapPinIcon,
   PlusIcon,
+  PrinterIcon,
   SearchIcon,
   UsersIcon,
 } from 'lucide-react';
@@ -61,6 +62,7 @@ function MissionsContent() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [needsOnly, setNeedsOnly] = useState(false);
 
   const fetchMissions = useCallback(async () => {
     try {
@@ -113,9 +115,10 @@ function MissionsContent() {
     return missions.filter(
       (m) =>
         (!category || m.category === category) &&
+        (!needsOnly || (m.status !== 'full' && (m.isUrgent || m.volunteers.length / m.maxVolunteers < 0.6))) &&
         (!q || `${m.title} ${m.location} ${m.category}`.toLowerCase().includes(q))
     );
-  }, [missions, category, query]);
+  }, [missions, category, query, needsOnly]);
 
   if (!user) return null;
   const canCreate = user.role === 'admin' || user.role === 'category_responsible';
@@ -134,6 +137,14 @@ function MissionsContent() {
             <CheckCircle2Icon className="mr-2 h-4 w-4" />
             Mes missions
           </Button>
+          {onlyMine && (
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/mon-planning">
+                <PrinterIcon className="mr-2 h-4 w-4" />
+                Mon planning imprimable
+              </Link>
+            </Button>
+          )}
           {canCreate && (
             <Button asChild className="bg-gold-400 text-blue-950 hover:bg-gold-300">
               <Link href="/dashboard/missions/new">
@@ -157,6 +168,18 @@ function MissionsContent() {
             aria-label="Rechercher une mission"
           />
         </div>
+        {!onlyMine && (
+          <button
+            onClick={() => setNeedsOnly((v) => !v)}
+            aria-pressed={needsOnly}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+              needsOnly ? 'border-gold-500 bg-gold-400 text-blue-950' : 'bg-card hover:bg-gold-50'
+            }`}
+          >
+            <FlameIcon className="h-4 w-4" />
+            Il manque des bénévoles
+          </button>
+        )}
         {categories.length > 1 && (
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Catégories">
             {[null, ...categories].map((c) => {
