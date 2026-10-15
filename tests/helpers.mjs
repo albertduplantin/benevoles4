@@ -17,7 +17,7 @@ export const RUN = `test_${Date.now().toString(36)}`;
 export async function createUser(name, role = 'volunteer', extra = {}) {
   const id = `${RUN}_${name}`;
   await sql`INSERT INTO users (id, email, first_name, last_name, phone, role, name, email_only, personal_token, data_processing_consent)
-            VALUES (${id}, ${`${id}@test.invalid`}, ${name}, 'Test', '0600000000', ${role}, ${name}, ${extra.emailOnly ?? false}, ${extra.token ?? null}, true)`;
+            VALUES (${id}, ${`${id}@test.invalid`}, ${extra.emptyProfile ? '' : name}, ${extra.emptyProfile ? '' : 'Test'}, ${extra.emptyProfile ? '' : '0600000000'}, ${role}, ${extra.emptyProfile ? null : name}, ${extra.emailOnly ?? false}, ${extra.token ?? null}, true)`;
   const jwt = await encode({ token: { sub: id, name, email: `${id}@test.invalid` }, secret: SECRET, salt: COOKIE, maxAge: 3600 });
   return { id, client: makeClient(`${COOKIE}=${jwt}`) };
 }

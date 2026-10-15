@@ -204,3 +204,15 @@ test('connexion par email : lien envoyé, lien à usage unique, compte existant 
   assert.equal(count[0].c, 1, 'pas de doublon de compte');
   await sql`DELETE FROM verification_tokens WHERE identifier = ${email}`;
 });
+
+test('profil incomplet : inscription refusée tant que nom, prénom et téléphone manquent', async () => {
+  const newcomer = await createUser('newcomer', 'volunteer', { emptyProfile: true });
+  const m = (await admin.client.post('/api/missions', mk('profil', { maxVolunteers: 5, ...slot(7) }))).data.mission;
+  const refused = await newcomer.client.post(`/api/missions/${m.id}/register`);
+  assert.equal(refused.status, 403);
+  assert.match(refused.data.error, /profil/i);
+  // une fois le profil complété, l'inscription passe
+  const sync = await newcomer.client.post('/api/users/sync', { firstName: 'Marie', lastName: 'Dupont', phone: '06 12 34 56 78' });
+  assert.equal(sync.status, 200);
+  assert.equal((await newcomer.client.post(`/api/missions/${m.id}/register`)).status, 200);
+});

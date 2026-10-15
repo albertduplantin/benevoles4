@@ -23,7 +23,7 @@ export function useAuth() {
   const sessionUser = session?.user;
   const id = sessionUser?.id;
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['me', id],
     queryFn: () => getUserById(id!),
     enabled: !!id,
@@ -56,7 +56,8 @@ export function useAuth() {
   return {
     user: user as any,
     isSignedIn: !!sessionUser,
-    loading: status === 'loading',
+    // tant que le profil n'est pas arrivé, on ne sait pas s'il est complet : on attend
+    loading: status === 'loading' || (!!id && profileLoading),
     // Recharge le profil depuis la base (après modification du profil par exemple)
     refreshUser: async () => {
       await queryClient.invalidateQueries({ queryKey: ['me'] });
