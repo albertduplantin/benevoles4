@@ -1,17 +1,35 @@
 import NextAuth from 'next-auth';
-import Resend from 'next-auth/providers/resend';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { eq } from 'drizzle-orm';
 import { db, users, accounts, verificationTokens } from '@/lib/db';
 import { authConfig } from './auth.config';
+import { emailSendingEnabled, sendEmail } from '@/lib/server/email';
+import { renderMagicLinkEmail } from '@/lib/server/magic-link-email';
 
 type Role = 'volunteer' | 'category_responsible' | 'admin';
 
 // Intervalle minimal entre deux relectures du profil en base (rôle modifié par un admin, etc.)
 const PROFILE_REFRESH_MS = 60_000;
 
-/** Le lien magique n'est actif que si un expéditeur vérifié est configuré (domaine Resend). */
-export const emailLoginEnabled = !!(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM);
+/** La connexion par email n'est proposée que si l'envoi d'emails est configuré (SMTP ou Resend). */
+export const emailLoginEnabled = emailSendingEnabled();
+
+/** Identifiant du fournisseur de connexion par lien envoyé par email */
+export const EMAIL_PROVIDER_ID = 'email';
+
+const emailProvider = {
+  id: EMAIL_PROVIDER_ID,
+  type: 'email' as const,
+  name: 'Email',
+  from: 'Festival Films Courts de Dinan',
+  maxAge: 24 * 60 * 60,
+  options: {},
+  async sendVerificationRequest({ identifier, url }: { identifier: string; url: string }) {
+    const { subject, html, text } = renderMagicLinkEmail({ url });
+    const sent = await sendEmail({ to: identifier, subject, html, text });
+    if (!sent) throw new Error("L'envoi d'emails n'est pas configuré");
+  },
+};
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -22,14 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   } as any),
   providers: [
     ...authConfig.providers,
-    ...(emailLoginEnabled
-      ? [
-          Resend({
-            apiKey: process.env.RESEND_API_KEY,
-            from: process.env.AUTH_EMAIL_FROM,
-          }),
-        ]
-      : []),
+    ...(emailLoginEnabled ? [emailProvider] : []),
   ],
   callbacks: {
     ...authConfig.callbacks,

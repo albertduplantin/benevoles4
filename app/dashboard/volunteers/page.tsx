@@ -53,7 +53,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { CreateVolunteerModal } from '@/components/features/admin/create-volunteer-modal';
-import { SearchIcon, EditIcon, Trash2Icon, UserPlusIcon, UserMinusIcon, CalendarIcon, Download, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { SendIcon, SearchIcon, EditIcon, Trash2Icon, UserPlusIcon, UserMinusIcon, CalendarIcon, Download, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { formatDateTime } from '@/lib/utils/date';
@@ -187,6 +187,17 @@ export default function VolunteersPage() {
       toast.error('Erreur lors du changement de rôle');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleInvite = async (volunteer: UserClient) => {
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(volunteer.uid)}/invite`, { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Envoi impossible");
+      toast.success(`Lien de connexion envoyé à ${volunteer.email}`);
+    } catch (error: any) {
+      toast.error(error.message || "Envoi impossible");
     }
   };
 
@@ -475,6 +486,15 @@ export default function VolunteersPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Envoyer son lien de connexion par email"
+                              aria-label="Envoyer son lien de connexion par email"
+                              onClick={() => handleInvite(volunteer)}
+                            >
+                              <SendIcon className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

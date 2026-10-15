@@ -157,3 +157,50 @@ test('pages : chargent sans erreur serveur (admin connecté) et redirigent sans 
   const redirected = await anonymous.get('/dashboard/missions');
   assert.ok([302, 307].includes(redirected.status), `non connecté -> ${redirected.status}`);
 });
+
+test('connexion par email : lien envoyé, lien à usage unique, compte existant retrouvé', async (t) => {
+  const base = process.env.BASE_URL ?? 'http://localhost:3000';
+  const providers = await (await fetch(`${base}/api/auth/providers`)).json();
+  if (!providers.email) return t.skip("connexion par email non configurée sur ce serveur");
+
+  const { createHash, randomBytes } = await import('node:crypto');
+  const known = await createUser('mailuser'); // volontaire créé à l'avance (ancien bénévole)
+  const email = `${known.id}@test.invalid`;
+
+  // 1. demande de lien : redirection vers la page "regardez vos emails" + jeton enregistré
+  const csrfRes = await fetch(`${base}/api/auth/csrf`);
+  const { csrfToken } = await csrfRes.json();
+  // comme un navigateur : pour un même nom de cookie, la dernière valeur reçue l'emporte
+  const jar = new Map(csrfRes.headers.getSetCookie().map((c) => c.split(';')[0].split(/=(.*)/s).slice(0, 2)));
+  const csrfCookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
+  const ask = await fetch(`${base}/api/auth/signin/email`, {
+    method: 'POST',
+    redirect: 'manual',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: csrfCookie },
+    body: new URLSearchParams({ csrfToken, email, callbackUrl: `${base}/dashboard/missions` }),
+  });
+  assert.ok([302, 303].includes(ask.status), `demande -> ${ask.status}`);
+  assert.match(ask.headers.get('location') ?? '', /verify/, 'redirige vers /auth/verify');
+  const pending = await sql`SELECT count(*)::int c FROM verification_tokens WHERE identifier = ${email}`;
+  assert.equal(pending[0].c, 1);
+
+  // 2. clic sur le lien (jeton connu : on le fabrique comme Auth.js le stocke)
+  const raw = randomBytes(16).toString('hex');
+  const hashed = createHash('sha256').update(`${raw}${process.env.AUTH_SECRET}`).digest('hex');
+  await sql`INSERT INTO verification_tokens (identifier, token, expires) VALUES (${email}, ${hashed}, ${new Date(Date.now() + 3600_000)})`;
+  const link = `${base}/api/auth/callback/email?token=${raw}&email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(base + '/dashboard/missions')}`;
+  const click = await fetch(link, { redirect: 'manual' });
+  assert.ok([302, 303].includes(click.status), `clic -> ${click.status}`);
+  const cookie = click.headers.getSetCookie().map((c) => c.split(';')[0]).find((c) => c.includes('session-token'));
+  assert.ok(cookie, 'cookie de session reçu');
+  const session = await (await fetch(`${base}/api/auth/session`, { headers: { cookie } })).json();
+  assert.equal(session.user.email, email);
+  assert.equal(session.user.id, known.id, 'rattaché au compte existant, pas un doublon');
+
+  // 3. le même lien ne marche qu'une fois
+  const again = await fetch(link, { redirect: 'manual' });
+  assert.match(again.headers.get('location') ?? '', /error|login/i);
+  const count = await sql`SELECT count(*)::int c FROM users WHERE lower(email) = ${email.toLowerCase()}`;
+  assert.equal(count[0].c, 1, 'pas de doublon de compte');
+  await sql`DELETE FROM verification_tokens WHERE identifier = ${email}`;
+});

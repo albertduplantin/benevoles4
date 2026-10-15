@@ -20,7 +20,8 @@ export function isPublicPath(pathname: string): boolean {
  */
 export const authConfig = {
   trustHost: true,
-  session: { strategy: 'jwt' },
+  // Session de 90 jours : les bénévoles n'ont pas à se reconnecter à chaque visite
+  session: { strategy: 'jwt', maxAge: 90 * 24 * 60 * 60 },
   pages: {
     signIn: '/auth/login',
     verifyRequest: '/auth/verify',

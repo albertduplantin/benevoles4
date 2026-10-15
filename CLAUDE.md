@@ -32,7 +32,7 @@ Application Next.js de gestion des bénévoles (missions, inscriptions, responsa
 - Conventions : camelCase, composants PascalCase, fichiers kebab-case, imports `@/`, Server Components par défaut.
 
 ## Variables d'environnement
-`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `RESEND_API_KEY`, `NEXT_PUBLIC_APP_BASE_URL`, et optionnellement `AUTH_EMAIL_FROM` (expéditeur sur un domaine Resend vérifié : active la connexion par lien magique).
+`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `RESEND_API_KEY`, `NEXT_PUBLIC_APP_BASE_URL`, et pour l'envoi d'emails (connexion par lien, notifications) : soit `SMTP_USER` + `SMTP_PASSWORD` (Gmail avec mot de passe d'application, sans domaine), soit `RESEND_API_KEY` + `AUTH_EMAIL_FROM` (domaine vérifié). Sans l'un des deux, le formulaire de connexion par email est masqué. `EMAIL_TRANSPORT=json` simule l'envoi (tests locaux).
 Ne jamais afficher ni committer `.env*`. `*firebase-adminsdk*.json` est ignoré par git.
 
 ## Commandes
@@ -46,6 +46,7 @@ Ne jamais afficher ni committer `.env*`. `*firebase-adminsdk*.json` est ignoré 
 - Après un changement, lancer les tests et ne lire que les échecs (`| grep -E "✖|fail"`).
 
 ## Points d'attention
-- Emails : sans domaine vérifié, Resend n'envoie qu'au propriétaire du compte.
+- Emails : Resend sans domaine vérifié n'écrit qu'au propriétaire du compte ; préférer le SMTP (voir variables).
+- Connexion par email : lien à usage unique valable 24 h (`lib/server/magic-link-email.ts`), session de 90 jours ; bouton « envoyer son lien » par bénévole côté admin.
 - Notifications push (FCM) abandonnées ; notifications in-app (table `notifications`, polling 30 s) + email.
 - Comptes existants rattachés par email à la première connexion Google (`allowDangerousEmailAccountLinking`).
