@@ -15,7 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "test:api": "node --env-file=.env.local --test --test-reporter=spec tests/api.test.mjs",
     "test:ui": "node --env-file=.env.local tests/ui.mjs && node --env-file=.env.local tests/ui-onboarding.mjs",
-    "backup": "node --env-file=.env.local scripts/backup-db.mjs"
+    "backup": "node --env-file=.env.local scripts/backup-db.mjs",
+    "test:responsive": "node --env-file=.env.local tests/responsive.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

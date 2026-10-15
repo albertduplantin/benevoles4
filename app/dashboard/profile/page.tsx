@@ -137,7 +137,7 @@ export default function ProfilePage() {
                   <MailIcon className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{user.email}</p>
+                    <p className="break-all font-medium">{user.email}</p>
                   </div>
                 </div>
 

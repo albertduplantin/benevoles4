@@ -168,7 +168,7 @@ export function Header() {
         </div>
 
         {/* Navigation Desktop */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {primaryNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -220,7 +220,7 @@ export function Header() {
         </nav>
 
         {/* Profil utilisateur & Déconnexion Desktop */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
           {/* Recherche bénévoles (Admin only) */}
           {user.role === 'admin' && (
             <Button variant="outline" size="sm" asChild>
@@ -258,7 +258,7 @@ export function Header() {
           {/* Notifications en temps réel (admins et responsables) */}
           <NotificationBell />
           
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <InstallPWAButton />
           </div>
           <DropdownMenu>
@@ -309,7 +309,7 @@ export function Header() {
         </div>
 
         {/* Menu Burger Mobile */}
-        <div className="md:hidden">
+        <div className="lg:hidden">
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">

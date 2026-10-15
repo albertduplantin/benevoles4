@@ -341,14 +341,14 @@ export default function VolunteersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Gestion des Bénévoles</h1>
           <p className="text-muted-foreground">
             Gérez les bénévoles, leurs informations et leurs inscriptions aux missions
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="default" 
             onClick={handleExportGrid}
@@ -421,8 +421,84 @@ export default function VolunteersPage() {
             />
           </div>
 
-          {/* Table des bénévoles */}
-          <div className="rounded-md border">
+          {/* Téléphone : une carte par bénévole (le tableau est trop large pour un petit écran) */}
+          <div className="space-y-3 md:hidden">
+            {filteredVolunteers.length === 0 ? (
+              <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">Aucun bénévole trouvé</p>
+            ) : (
+              filteredVolunteers.map((volunteer) => {
+                const volunteerMissions = getVolunteerMissions(volunteer.uid);
+                return (
+                  <article key={volunteer.uid} className="space-y-3 rounded-xl border bg-card p-4">
+                    <div>
+                      <p className="text-lg font-semibold">
+                        {volunteer.firstName} {volunteer.lastName}
+                      </p>
+                      <p className="break-all text-sm text-muted-foreground">{volunteer.email}</p>
+                      {volunteer.phone ? (
+                        <a href={`tel:${volunteer.phone.replace(/\s/g, '')}`} className="text-sm font-medium underline">
+                          {volunteer.phone}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Téléphone non renseigné</p>
+                      )}
+                    </div>
+                    <Select
+                      value={volunteer.role}
+                      onValueChange={(value) => handleChangeRole(volunteer.uid, value as any)}
+                      disabled={isProcessing || volunteer.uid === user.uid}
+                    >
+                      <SelectTrigger className="h-11 w-full">
+                        <SelectValue>
+                          <Badge variant={getRoleBadgeVariant(volunteer.role)}>{getRoleLabel(volunteer.role)}</Badge>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="volunteer">Bénévole</SelectItem>
+                        <SelectItem value="admin">Administrateur</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedVolunteer(volunteer);
+                          setIsMissionsDialogOpen(true);
+                        }}
+                      >
+                        {volunteerMissions.length} mission(s)
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleInvite(volunteer)}>
+                        <SendIcon className="mr-1.5 h-4 w-4" />
+                        Envoyer le lien
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(volunteer)}>
+                        <EditIcon className="mr-1.5 h-4 w-4" />
+                        Modifier
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive"
+                        disabled={volunteer.uid === user.uid}
+                        onClick={() => {
+                          setSelectedVolunteer(volunteer);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2Icon className="mr-1.5 h-4 w-4" />
+                        Supprimer
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          {/* Table des bénévoles (tablette et ordinateur) */}
+          <div className="hidden rounded-md border md:block">
             <Table>
               <TableHeader>
                 <TableRow>

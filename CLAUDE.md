@@ -43,6 +43,7 @@ Ne jamais afficher ni committer `.env*`. `*firebase-adminsdk*.json` est ignoré 
 ## Tests
 - `npm run test:api` : tests d'API et de pages (12 scénarios, ~15 s). Le serveur doit tourner (`npm run dev`) ; `BASE_URL=https://... npm run test:api` pour tester un déploiement.
 - `tests/helpers.mjs` signe un cookie de session Auth.js avec `AUTH_SECRET` : pas besoin de Google. Toutes les données créées sont préfixées `test_` et supprimées à la fin.
+- `npm run test:responsive` : ouvre ~19 pages en largeur téléphone (390 px) et tablette (768 px) et signale tout débordement horizontal. Sous 1024 px le menu est compact (menu burger + barre du bas) ; les tableaux larges deviennent des cartes sur téléphone.
 - Après un changement, lancer les tests et ne lire que les échecs (`| grep -E "✖|fail"`).
 
 ## Points d'attention

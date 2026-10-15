@@ -368,7 +368,7 @@ export default function SearchVolunteersPage() {
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             <Button onClick={applyFilters} className="flex-1">
               <SearchIcon className="h-4 w-4 mr-2" />
               Rechercher ({volunteers.filter(v => hasPreferences(v)).length} bénévoles)

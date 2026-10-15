@@ -52,7 +52,7 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-background">
       <Header />
       <SupportBanner />
-      <main className="container mx-auto px-4 py-6 pb-24 md:pb-6">{children}</main>
+      <main className="container mx-auto px-4 py-6 pb-24 lg:pb-6">{children}</main>
       <BottomNav />
     </div>
   );

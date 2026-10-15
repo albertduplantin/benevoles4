@@ -305,7 +305,7 @@ export default function MissionDetailPage() {
     <div className="min-h-screen md:p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button variant="ghost" asChild>
             <Link href="/dashboard/missions">
               <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -313,7 +313,7 @@ export default function MissionDetailPage() {
             </Link>
           </Button>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {mission && (canManageVolunteers || participants.length > 0) && (
               <ExportButtons
                 type="mission"
@@ -589,7 +589,7 @@ export default function MissionDetailPage() {
                   {participants.map((participant) => (
                     <div
                       key={participant.uid}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 p-3"
                     >
                       <div className="flex items-center gap-3">
                         <Avatar>
@@ -612,12 +612,12 @@ export default function MissionDetailPage() {
                           <p className="font-semibold">
                             {participant.firstName} {participant.lastName}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="break-all text-sm text-muted-foreground">
                             {participant.email}
                           </p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center">
+                      <div className="flex flex-wrap items-center justify-end gap-2 text-sm text-muted-foreground">
                         <p>{participant.phone}</p>
                         {canManageVolunteers && (
                           <div className="flex gap-1" role="group" aria-label="Pointage">

@@ -184,9 +184,9 @@ export default function CategoryResponsiblesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold">Responsables de Catégories</h1>
           <p className="text-muted-foreground">
@@ -254,7 +254,7 @@ export default function CategoryResponsiblesPage() {
                         key={category.id}
                         className="p-3 bg-gray-50 rounded-lg"
                       >
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                           <p className="font-medium">{category.label}</p>
                           <Button
                             variant="outline"
@@ -278,7 +278,7 @@ export default function CategoryResponsiblesPage() {
                             {responsibles.map((responsible) => (
                               <div
                                 key={responsible.uid}
-                                className="flex items-center justify-between p-2 bg-white rounded border"
+                                className="flex items-center justify-between gap-2 rounded border bg-white p-2"
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="text-lg">👑</span>
@@ -286,7 +286,7 @@ export default function CategoryResponsiblesPage() {
                                     <p className="text-sm font-medium">
                                       {responsible.firstName} {responsible.lastName}
                                     </p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="break-all text-xs text-muted-foreground">
                                       {responsible.email}
                                     </p>
                                   </div>
