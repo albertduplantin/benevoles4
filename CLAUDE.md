@@ -46,6 +46,12 @@ Ne jamais afficher ni committer `.env*`. `*firebase-adminsdk*.json` est ignoré 
 - `npm run test:responsive` : ouvre ~19 pages en largeur téléphone (390 px) et tablette (768 px) et signale tout débordement horizontal. Sous 1024 px le menu est compact (menu burger + barre du bas) ; les tableaux larges deviennent des cartes sur téléphone.
 - Après un changement, lancer les tests et ne lire que les échecs (`| grep -E "✖|fail"`).
 
+## Performance (à ne pas défaire)
+- **La région des fonctions Vercel doit rester celle de la base** : `vercel.json` fixe `fra1` (Francfort) comme Neon. Avec `iad1` (Washington), chaque appel d'API passait de ~90 ms à ~440 ms (un aller-retour transatlantique par requête SQL).
+- Les bibliothèques lourdes (Excel `xlsx`, PDF `jspdf`) sont chargées **au clic** (`await import(...)`), jamais en import statique : sinon +2,4 Mo de JavaScript sur toutes les pages.
+- `/api/health` réveille la base (Neon gratuit s'endort après ~5 min) ; la page de connexion l'appelle dès son ouverture (`WakeDatabase`).
+- Mesures : `npm run test:perf` (temps des API et pages) et `node --env-file=.env.local tests/perf-pages.mjs` (poids et vitesse sur téléphone en 4G simulée). Repères actuels : API ~90 ms, pages affichées en < 1 s, JS reçu 180-360 Ko.
+
 ## Points d'attention
 - Emails : Resend sans domaine vérifié n'écrit qu'au propriétaire du compte ; préférer le SMTP (voir variables).
 - Connexion par email : lien à usage unique valable 24 h (`lib/server/magic-link-email.ts`), session de 90 jours ; bouton « envoyer son lien » par bénévole côté admin.
