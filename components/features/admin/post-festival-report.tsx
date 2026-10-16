@@ -3,8 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { MissionClient, UserClient } from '@/types';
 import { FileTextIcon } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { toast } from 'sonner';
 
 interface PostFestivalReportProps {
@@ -13,8 +11,9 @@ interface PostFestivalReportProps {
 }
 
 export function PostFestivalReport({ missions, allVolunteers }: PostFestivalReportProps) {
-  const generateReport = () => {
+  const generateReport = async () => {
     try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       let yPosition = 20;

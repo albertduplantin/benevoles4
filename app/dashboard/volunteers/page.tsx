@@ -65,8 +65,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { exportVolunteerAssignmentsExcel, exportVolunteerMissionGridExcel } from '@/lib/utils/excel-export';
-import { exportVolunteerAssignmentsPDF } from '@/lib/utils/pdf-export';
 
 export default function VolunteersPage() {
   const { user, loading } = useAuth();
@@ -297,10 +295,10 @@ export default function VolunteersPage() {
     setIsExporting(true);
     try {
       if (format === 'pdf') {
-        await exportVolunteerAssignmentsPDF(volunteers, missions);
+        await (await import('@/lib/utils/pdf-export')).exportVolunteerAssignmentsPDF(volunteers, missions);
         toast.success('Export PDF généré avec succès');
       } else {
-        exportVolunteerAssignmentsExcel(volunteers, missions);
+        (await import('@/lib/utils/excel-export')).exportVolunteerAssignmentsExcel(volunteers, missions);
         toast.success('Export Excel généré avec succès');
       }
     } catch (error) {
@@ -314,7 +312,7 @@ export default function VolunteersPage() {
   const handleExportGrid = async () => {
     setIsExporting(true);
     try {
-      exportVolunteerMissionGridExcel(volunteers, missions);
+      (await import('@/lib/utils/excel-export')).exportVolunteerMissionGridExcel(volunteers, missions);
       toast.success('Planning visuel généré avec succès');
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);

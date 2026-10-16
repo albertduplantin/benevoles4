@@ -3,6 +3,7 @@ import { ClapperboardIcon, MailIcon, PhoneIcon } from 'lucide-react';
 import { emailLoginEnabled } from '@/auth';
 import { SUPPORT_PHONE } from '@/lib/server/magic-link-email';
 import { TextSizeToggle } from '@/components/layouts/text-size-toggle';
+import { WakeDatabase } from '@/components/layouts/wake-database';
 import { signInWithEmail, signInWithGoogle } from './actions';
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -34,6 +35,7 @@ export default async function LoginPage({
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
+      <WakeDatabase />
       {/* Panneau de marque */}
       <aside className="relative hidden overflow-hidden bg-blue-950 text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div

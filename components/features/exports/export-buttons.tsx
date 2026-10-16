@@ -12,21 +12,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Download, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { MissionClient, UserClient } from '@/types';
-import {
-  exportMissionVolunteersPDF,
-  exportMissionReportPDF,
-  exportGlobalStatsPDF,
-  exportVolunteerPlanningPDF,
-  exportGlobalPlanningPDF,
-} from '@/lib/utils/pdf-export';
-import {
-  exportMissionVolunteersExcel,
-  exportMissionReportExcel,
-  exportGlobalStatsExcel,
-  exportFullDataExcel,
-  exportVolunteerPlanningExcel,
-  exportGlobalPlanningExcel,
-} from '@/lib/utils/excel-export';
 
 interface ExportButtonsProps {
   type: 'mission' | 'global' | 'volunteer-planning';
@@ -62,40 +47,40 @@ export function ExportButtons({
         // Exports pour une mission spécifique
         if (format === 'pdf') {
           if (exportType === 'volunteers') {
-            await exportMissionVolunteersPDF(mission, volunteers, categoryResponsible);
+            await (await import('@/lib/utils/pdf-export')).exportMissionVolunteersPDF(mission, volunteers, categoryResponsible);
           } else if (exportType === 'report') {
-            await exportMissionReportPDF(mission, volunteers, responsibles, categoryResponsible);
+            await (await import('@/lib/utils/pdf-export')).exportMissionReportPDF(mission, volunteers, responsibles, categoryResponsible);
           }
         } else if (format === 'excel') {
           if (exportType === 'volunteers') {
-            exportMissionVolunteersExcel(mission, volunteers, categoryResponsible);
+            (await import('@/lib/utils/excel-export')).exportMissionVolunteersExcel(mission, volunteers, categoryResponsible);
           } else if (exportType === 'report') {
-            exportMissionReportExcel(mission, volunteers, responsibles, categoryResponsible);
+            (await import('@/lib/utils/excel-export')).exportMissionReportExcel(mission, volunteers, responsibles, categoryResponsible);
           }
         }
       } else if (type === 'global' && missions) {
         // Exports globaux
         if (format === 'pdf') {
           if (exportType === 'stats') {
-            await exportGlobalStatsPDF(missions, totalVolunteers);
+            await (await import('@/lib/utils/pdf-export')).exportGlobalStatsPDF(missions, totalVolunteers);
           } else if (exportType === 'planning' && allVolunteers) {
-            await exportGlobalPlanningPDF(missions, allVolunteers);
+            await (await import('@/lib/utils/pdf-export')).exportGlobalPlanningPDF(missions, allVolunteers);
           }
         } else if (format === 'excel') {
           if (exportType === 'stats') {
-            exportGlobalStatsExcel(missions, totalVolunteers);
+            (await import('@/lib/utils/excel-export')).exportGlobalStatsExcel(missions, totalVolunteers);
           } else if (exportType === 'full' && allVolunteers) {
-            exportFullDataExcel(missions, allVolunteers);
+            (await import('@/lib/utils/excel-export')).exportFullDataExcel(missions, allVolunteers);
           } else if (exportType === 'planning' && allVolunteers) {
-            exportGlobalPlanningExcel(missions, allVolunteers);
+            (await import('@/lib/utils/excel-export')).exportGlobalPlanningExcel(missions, allVolunteers);
           }
         }
       } else if (type === 'volunteer-planning' && missions && allParticipants) {
         // Export planning personnel bénévole
         if (format === 'pdf') {
-          await exportVolunteerPlanningPDF(missions, volunteerName, allParticipants);
+          await (await import('@/lib/utils/pdf-export')).exportVolunteerPlanningPDF(missions, volunteerName, allParticipants);
         } else if (format === 'excel') {
-          await exportVolunteerPlanningExcel(missions, volunteerName, allParticipants);
+          await (await import('@/lib/utils/excel-export')).exportVolunteerPlanningExcel(missions, volunteerName, allParticipants);
         }
       }
     } catch (error) {

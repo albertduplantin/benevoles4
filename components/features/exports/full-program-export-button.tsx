@@ -11,7 +11,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { MissionClient } from '@/types';
-import { exportFullProgramPDF } from '@/lib/utils/pdf-export';
 import { PrinterIcon } from 'lucide-react';
 
 interface FullProgramExportButtonProps {
@@ -29,7 +28,7 @@ export function FullProgramExportButton({
   const handleExport = async (format: 'a4' | 'a3') => {
     try {
       setIsExporting(true);
-      await exportFullProgramPDF(missions, format, allowedCategories);
+      await (await import('@/lib/utils/pdf-export')).exportFullProgramPDF(missions, format, allowedCategories);
       setIsOpen(false);
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);

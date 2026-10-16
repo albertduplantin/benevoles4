@@ -36,6 +36,7 @@ function makeClient(cookie) {
     return { status: res.status, data };
   };
   return {
+    _cookie: cookie,
     get: (p) => call('GET', p),
     post: (p, b = {}) => call('POST', p, b),
     put: (p, b) => call('PUT', p, b),

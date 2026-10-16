@@ -37,7 +37,6 @@ import {
   Loader2,
   MegaphoneIcon,
 } from 'lucide-react';
-import { exportVolunteerMissionGridExcel } from '@/lib/utils/excel-export';
 import { toast } from 'sonner';
 import { getAllVolunteers } from '@/lib/api/users';
 
@@ -157,7 +156,7 @@ export default function DashboardOverviewPage() {
     try {
       // Charger tous les bénévoles pour l'export
       const volunteersData = await getAllVolunteers();
-      exportVolunteerMissionGridExcel(volunteersData, allMissions);
+      (await import('@/lib/utils/excel-export')).exportVolunteerMissionGridExcel(volunteersData, allMissions);
       toast.success('Planning visuel généré avec succès');
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);

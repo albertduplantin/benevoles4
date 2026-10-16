@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { CheckCircle2Icon, FileSpreadsheetIcon, SendIcon, UploadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,7 +25,8 @@ const COLUMNS: Record<keyof Row, string[]> = {
   phone: ['telephone', 'tel', 'phone', 'portable', 'mobile', 'numerotelephone', 'telephoneportable'],
 };
 
-function parseSheet(buffer: ArrayBuffer): Row[] {
+async function parseSheet(buffer: ArrayBuffer): Promise<Row[]> {
+  const XLSX = await import('xlsx');
   const workbook = XLSX.read(buffer, { type: 'array' });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const table = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '', raw: false });
@@ -71,7 +71,7 @@ export default function ImportVolunteersPage() {
     if (!file) return;
     setResult(null);
     try {
-      const parsed = parseSheet(await file.arrayBuffer());
+      const parsed = await parseSheet(await file.arrayBuffer());
       if (parsed.length === 0) throw new Error('Aucune ligne trouvée dans ce fichier');
       setRows(parsed);
       setFileName(file.name);
