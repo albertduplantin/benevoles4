@@ -35,7 +35,7 @@ try {
     '/dashboard/profile', '/dashboard/preferences', '/dashboard/overview', '/dashboard/volunteers',
     '/dashboard/affectations', '/dashboard/admin/categories', '/dashboard/admin/category-responsibles',
     '/dashboard/admin/email-only', '/dashboard/admin/notifications', '/dashboard/admin/search-volunteers',
-    '/dashboard/admin/import', '/dashboard/volunteer-call', '/dashboard/mon-planning', '/auth/login', '/',
+    '/dashboard/admin/import', '/dashboard/missions/series', '/dashboard/volunteer-call', '/dashboard/mon-planning', '/auth/login', '/',
   ].filter((p) => !only || only.some((o) => p.includes(o)));
 
   browser = await chromium.launch({ channel: 'msedge' });

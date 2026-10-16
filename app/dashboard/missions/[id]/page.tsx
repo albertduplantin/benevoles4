@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useParams } from 'next/navigation';
 import { getMissionById, duplicateMission } from '@/lib/api/missions';
 import { registerToMission, unregisterFromMission } from '@/lib/api/registrations';
+import { api } from '@/lib/api/http';
 import { getUserById } from '@/lib/api/users';
 import { isProfileComplete } from '@/lib/api/users';
 // Ancien système de postulation supprimé - utiliser category-responsibles maintenant
@@ -227,7 +228,14 @@ export default function MissionDetailPage() {
   const handleUnregister = async () => {
     if (!user || !missionId) return;
 
-    if (!confirm('Êtes-vous sûr de vouloir vous désinscrire de cette mission ?')) {
+    // À moins de 24 h, la désinscription simple est fermée : on passe par « Je ne peux plus venir »
+    const startsSoon =
+      !!mission?.startDate && mission.startDate.getTime() > Date.now() && mission.startDate.getTime() - Date.now() < 24 * 3_600_000;
+
+    const message = startsSoon
+      ? 'Vous ne pouvez plus venir ?\n\nVotre place sera libérée et les responsables seront prévenus. Un appel sera envoyé aux bénévoles disponibles pour vous remplacer.'
+      : 'Êtes-vous sûr de vouloir vous désinscrire de cette mission ?';
+    if (!confirm(message)) {
       return;
     }
 
@@ -236,8 +244,13 @@ export default function MissionDetailPage() {
     setSuccess(null);
 
     try {
-      await unregisterFromMission(missionId, user.uid);
-      setSuccess('✅ Désinscription réussie');
+      if (startsSoon) {
+        await api(`/api/missions/${missionId}/release`, { method: 'POST' });
+        setSuccess('✅ C’est noté. Merci de nous avoir prévenus !');
+      } else {
+        await unregisterFromMission(missionId, user.uid);
+        setSuccess('✅ Désinscription réussie');
+      }
 
       // Recharger la mission
       const updatedMission = await getMissionById(missionId);
@@ -465,7 +478,7 @@ export default function MissionDetailPage() {
                   variant="outline"
                   className="h-12 flex-1 border-green-500 text-base text-green-700"
                 >
-                  {isRegistering ? 'Désinscription...' : 'Me désinscrire'}
+                  {isRegistering ? 'Un instant...' : mission?.startDate && mission.startDate.getTime() > Date.now() && mission.startDate.getTime() - Date.now() < 24 * 3_600_000 ? 'Je ne peux plus venir' : 'Me désinscrire'}
                 </Button>
               )}
 

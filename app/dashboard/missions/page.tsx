@@ -7,7 +7,9 @@ import {
   CheckCircle2Icon,
   ClockIcon,
   FlameIcon,
+  CalendarPlusIcon,
   HourglassIcon,
+  NavigationIcon,
   MapPinIcon,
   PlusIcon,
   PrinterIcon,
@@ -25,6 +27,25 @@ const dayFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric' });
 const monthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
 const weekdayFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
 const timeFormat = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+/** « Aujourd'hui », « Demain » ou « Mardi 21 octobre » */
+function relativeDay(date: Date): string {
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diff = Math.round((startOfDay(date) - startOfDay(new Date())) / 86_400_000);
+  if (diff === 0) return "Aujourd'hui";
+  if (diff === 1) return 'Demain';
+  const text = dayLongFormat.format(date);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Moins de 24 h avant le début (la désinscription simple n'est plus possible) */
+function startsSoon(mission: { startDate?: Date }): boolean {
+  if (!mission.startDate) return false;
+  const delta = mission.startDate.getTime() - Date.now();
+  return delta > 0 && delta < 24 * 3_600_000;
+}
 
 /** Teinte stable par catégorie : une même catégorie garde toujours la même couleur */
 function categoryHue(category: string): number {
@@ -107,8 +128,29 @@ function MissionsContent() {
       return fromWaitlist ? "Retiré de la liste d'attente" : 'Désinscription effectuée';
     });
 
+  const release = (id: string) => {
+    const ok = window.confirm(
+      'Vous ne pouvez plus venir ?\n\nVotre place sera libérée et les responsables seront prévenus. Un appel sera envoyé aux bénévoles disponibles pour vous remplacer.'
+    );
+    if (!ok) return Promise.resolve();
+    return act(id, async () => {
+      await api(`/api/missions/${id}/release`, { method: 'POST' });
+      return 'C’est noté. Merci de nous avoir prévenus !';
+    });
+  };
+
   const userId: string | undefined = user?.id;
   const categories = useMemo(() => [...new Set(missions.map((m) => m.category))].sort(), [missions]);
+
+  const nextMission = useMemo(() => {
+    if (!userId) return null;
+    const now = Date.now();
+    return (
+      missions
+        .filter((m) => m.volunteers.includes(userId) && m.startDate && m.startDate.getTime() > now)
+        .sort((a, b) => a.startDate!.getTime() - b.startDate!.getTime())[0] ?? null
+    );
+  }, [missions, userId]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -132,7 +174,7 @@ function MissionsContent() {
             {onlyMine ? 'Vos créneaux et vos listes d’attente.' : 'Choisissez vos missions et inscrivez-vous en un clic.'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant={onlyMine ? 'default' : 'outline'} onClick={() => router.push(onlyMine ? '/dashboard/missions' : '/dashboard/missions?filter=my')}>
             <CheckCircle2Icon className="mr-2 h-4 w-4" />
             Mes missions
@@ -146,6 +188,14 @@ function MissionsContent() {
             </Button>
           )}
           {canCreate && (
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/missions/series">
+                <CalendarPlusIcon className="mr-2 h-4 w-4" />
+                Créer en série
+              </Link>
+            </Button>
+          )}
+          {canCreate && (
             <Button asChild className="bg-gold-400 text-blue-950 hover:bg-gold-300">
               <Link href="/dashboard/missions/new">
                 <PlusIcon className="mr-2 h-4 w-4" />
@@ -155,6 +205,36 @@ function MissionsContent() {
           )}
         </div>
       </div>
+
+      {/* Prochaine mission : l'information qui compte le plus pour un bénévole */}
+      {!onlyMine && nextMission && nextMission.startDate && (
+        <section className="rounded-2xl bg-blue-950 p-5 text-white shadow-md">
+          <p className="text-sm font-medium uppercase tracking-wide text-gold-300">Votre prochaine mission</p>
+          <p className="mt-2 font-display text-3xl font-semibold leading-tight">
+            {relativeDay(nextMission.startDate)} à {timeFormat.format(nextMission.startDate)}
+          </p>
+          <p className="mt-1 text-xl">{nextMission.title}</p>
+          <p className="mt-1 flex items-center gap-2 text-blue-100">
+            <MapPinIcon className="h-4 w-4 shrink-0" />
+            {nextMission.location}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button asChild className="bg-gold-400 text-blue-950 hover:bg-gold-300">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${nextMission.location} Dinan`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <NavigationIcon className="mr-2 h-4 w-4" />
+                Itinéraire
+              </a>
+            </Button>
+            <Button asChild variant="outline" className="border-blue-700 bg-transparent text-white hover:bg-blue-900 hover:text-white">
+              <Link href={`/dashboard/missions/${nextMission.id}`}>Voir les détails</Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Recherche + catégories */}
       <div className="space-y-3">
@@ -225,6 +305,7 @@ function MissionsContent() {
             const pct = Math.min(100, Math.round((taken / mission.maxVolunteers) * 100));
             const hue = categoryHue(mission.category);
             const busy = busyId === mission.id;
+            const soon = startsSoon(mission);
 
             return (
               <article
@@ -291,9 +372,14 @@ function MissionsContent() {
                     </div>
 
                     {registered ? (
-                      <Button variant="outline" className="h-11 w-full border-green-500 text-green-700" disabled={busy} onClick={() => unregister(mission.id, false)}>
+                      <Button
+                        variant="outline"
+                        className={`h-11 w-full ${soon ? 'border-red-300 text-red-700' : 'border-green-500 text-green-700'}`}
+                        disabled={busy}
+                        onClick={() => (soon ? release(mission.id) : unregister(mission.id, false))}
+                      >
                         <CheckCircle2Icon className="mr-2 h-4 w-4" />
-                        Inscrit · Me désinscrire
+                        {soon ? 'Je ne peux plus venir' : 'Inscrit · Me désinscrire'}
                       </Button>
                     ) : waiting ? (
                       <Button variant="outline" className="h-11 w-full border-gold-500 text-gold-700" disabled={busy} onClick={() => unregister(mission.id, true)}>

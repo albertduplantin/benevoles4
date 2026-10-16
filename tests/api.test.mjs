@@ -274,3 +274,52 @@ test('rappels planifiés : refusés sans le bon secret', async () => {
   const bad = await fetch(`${base}/api/cron/reminders`, { headers: { authorization: 'Bearer mauvais' } });
   assert.equal(bad.status, 401);
 });
+
+test('je ne peux plus venir : place libérée à moins de 24 h, responsables prévenus, appel urgent', async () => {
+  const leaver = await createUser('partant');
+  const candidate = await createUser('candidat');
+  const soon = new Date(Date.now() + 5 * 3600_000);
+  const m = (
+    await admin.client.post('/api/missions', mk('urgence', { startDate: soon.toISOString(), endDate: new Date(+soon + 3600_000).toISOString(), maxVolunteers: 2 }))
+  ).data.mission;
+  await admin.client.post(`/api/missions/${m.id}/volunteers`, { userId: leaver.id });
+
+  assert.equal((await leaver.client.del(`/api/missions/${m.id}/register`)).status, 400, 'désinscription simple fermée à moins de 24 h');
+  assert.equal((await candidate.client.post(`/api/missions/${m.id}/release`)).status, 400, 'un non-inscrit ne peut pas se désister');
+
+  const res = await leaver.client.post(`/api/missions/${m.id}/release`);
+  assert.equal(res.status, 200, JSON.stringify(res.data));
+  assert.equal(res.data.urgent, true);
+  assert.equal(res.data.spotsLeft, 2);
+
+  const cur = (await admin.client.get(`/api/missions/${m.id}`)).data.mission;
+  assert.equal(cur.volunteers.includes(leaver.id), false);
+  assert.equal(cur.isUrgent, true, 'la mission passe en urgent');
+
+  await new Promise((r) => setTimeout(r, 3000));
+  const adminNotifs = (await admin.client.get('/api/notifications')).data.notifications;
+  assert.ok(adminNotifs.some((n) => n.missionId === m.id && n.type === 'volunteer_withdrawal'), 'responsables prévenus');
+  const candNotifs = (await candidate.client.get('/api/notifications')).data.notifications;
+  assert.ok(candNotifs.some((n) => n.missionId === m.id && n.type === 'urgent_call'), 'appel urgent reçu par un bénévole disponible');
+  const leaverNotifs = (await leaver.client.get('/api/notifications')).data.notifications;
+  assert.equal(leaverNotifs.some((n) => n.type === 'urgent_call'), false, 'le partant n est pas sollicité');
+});
+
+test('créneaux en série : création groupée, droits et validations', async () => {
+  const slots = [0, 1, 2].map((d) => slot(10 + d, 14, 4));
+  const body = { title: `${RUN} Série`, description: 'Accueil', category: `${RUN}_cat`, location: 'Salle', maxVolunteers: 3, status: 'published', slots };
+  assert.equal((await v1.client.post('/api/missions/series', body)).status, 403, 'un bénévole ne crée pas de série');
+  assert.equal((await resp.client.post('/api/missions/series', { ...body, category: 'Accueil VIP' })).status, 403, 'responsable : seulement ses catégories');
+
+  const res = await admin.client.post('/api/missions/series', body);
+  assert.equal(res.status, 201, JSON.stringify(res.data));
+  assert.equal(res.data.created, 3);
+  const list = (await admin.client.get('/api/missions?scope=all')).data.missions.filter((m) => m.title === body.title);
+  assert.equal(list.length, 3);
+  assert.ok(list.every((m) => m.status === 'published' && m.maxVolunteers === 3));
+
+  const reversed = { ...body, slots: [{ startDate: slots[0].endDate, endDate: slots[0].startDate }] };
+  assert.equal((await admin.client.post('/api/missions/series', reversed)).status, 400, 'créneau inversé refusé');
+  const tooMany = { ...body, slots: Array.from({ length: 101 }, () => slots[0]) };
+  assert.equal((await admin.client.post('/api/missions/series', tooMany)).status, 400, 'plus de 100 créneaux refusé');
+});

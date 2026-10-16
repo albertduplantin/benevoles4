@@ -2,7 +2,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db, missions, users, adminSettings, categoryResponsibles, notifications } from '@/lib/db';
 import type { Mission } from '@/lib/db';
 import { HttpError, newId } from './api';
-import { escapeHtml, sendEmail } from './email';
+import { escapeHtml, isTestAddress, sendEmail } from './email';
 import { renderNotificationEmail } from './notification-email';
 
 export async function getSettings() {
@@ -235,6 +235,10 @@ export async function notifyRegistration(mission: Mission, volunteerId: string):
     if (!recipients.has(u.id)) recipients.set(u.id, { id: u.id, email: u.email, firstName: u.firstName, isAdmin: false });
   }
   recipients.delete(volunteerId);
+  // Un compte de test (tests automatiques) ne doit jamais notifier de vraies personnes
+  if (volunteer?.email && isTestAddress(volunteer.email)) {
+    for (const [id, r] of recipients) if (!isTestAddress(r.email)) recipients.delete(id);
+  }
   if (recipients.size === 0) return;
 
   const list = [...recipients.values()];
