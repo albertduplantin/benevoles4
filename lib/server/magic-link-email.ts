@@ -1,6 +1,8 @@
 import { escapeHtml } from './email';
 
-export const SUPPORT_PHONE = '06 87 56 34 40';
+import { SUPPORT_NAME, SUPPORT_PHONE } from '@/lib/constants/support';
+
+export { SUPPORT_PHONE };
 
 /**
  * Email de connexion : volontairement simple, très lisible et sans jargon.
@@ -38,7 +40,7 @@ export function renderMagicLinkEmail({ url }: { url: string }) {
               <span style="word-break:break-all;font-size:14px;color:#8f6b17;">${safeUrl}</span>
             </p>
             <div style="background:#fdf7e8;border-radius:12px;padding:16px 18px;font-size:16px;line-height:1.5;">
-              <strong>Un souci ?</strong> Appelez Jérôme au <strong>${SUPPORT_PHONE}</strong>, il vous aidera.
+              <strong>Un souci ?</strong> Appelez ${SUPPORT_NAME} au <strong>${SUPPORT_PHONE}</strong>, elle vous aidera.
             </div>
             <p style="font-size:14px;color:#888;margin:24px 0 0 0;">
               Vous n'avez rien demandé ? Vous pouvez ignorer cet email, il ne se passera rien.
@@ -58,7 +60,7 @@ export function renderMagicLinkEmail({ url }: { url: string }) {
     '',
     "Il n'y a pas de mot de passe à retenir. Ce lien est valable 24 heures et ne sert qu'une fois.",
     '',
-    `Un souci ? Appelez Jérôme au ${SUPPORT_PHONE}.`,
+    `Un souci ? Appelez ${SUPPORT_NAME} au ${SUPPORT_PHONE}.`,
     '',
     "Vous n'avez rien demandé ? Ignorez simplement cet email.",
   ].join('\n');

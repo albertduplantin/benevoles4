@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ClapperboardIcon, MailIcon, PhoneIcon } from 'lucide-react';
 import { emailLoginEnabled } from '@/auth';
-import { SUPPORT_PHONE } from '@/lib/server/magic-link-email';
+import { SUPPORT_NAME, SUPPORT_PHONE, SUPPORT_PHONE_LINK } from '@/lib/constants/support';
 import { TextSizeToggle } from '@/components/layouts/text-size-toggle';
 import { WakeDatabase } from '@/components/layouts/wake-database';
 import { signInWithEmail, signInWithGoogle } from './actions';
@@ -141,8 +141,8 @@ export default async function LoginPage({
           <div className="flex items-start gap-3 rounded-xl bg-gold-50 p-4 text-base">
             <PhoneIcon className="mt-0.5 h-5 w-5 shrink-0 text-gold-700" />
             <p>
-              <strong>Besoin d’aide ?</strong> Appelez Jérôme au{' '}
-              <a href={`tel:${SUPPORT_PHONE.replace(/\s/g, '')}`} className="font-semibold underline">
+              <strong>Besoin d’aide ?</strong> Appelez {SUPPORT_NAME} au{' '}
+              <a href={`tel:${SUPPORT_PHONE_LINK}`} className="font-semibold underline">
                 {SUPPORT_PHONE}
               </a>
               .

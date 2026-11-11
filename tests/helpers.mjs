@@ -11,6 +11,22 @@ const SECRET = process.env.AUTH_SECRET;
 if (!SECRET) throw new Error('AUTH_SECRET manquant (lancer via npm run test:api)');
 
 export const sql = neon(process.env.DATABASE_URL);
+
+// Garde-fou : les tests créent des comptes et changent des réglages globaux (inscriptions ouvertes/fermées).
+// Ils ne doivent pas tourner sur une base qui contient de vrais utilisateurs.
+const realUsers = (await sql`select count(*)::int c from users where email not like '%@test.invalid'`)[0].c;
+if (realUsers > 3 && !process.env.ALLOW_TESTS_ON_REAL_DB) {
+  console.error(
+    `
+⛔ Tests annulés : cette base contient ${realUsers} vrais utilisateurs.
+` +
+      `Lancez les tests sur une base de test séparée (branche Neon dédiée, DATABASE_URL de test).
+` +
+      `Pour passer outre en connaissance de cause : ALLOW_TESTS_ON_REAL_DB=1
+`
+  );
+  process.exit(1);
+}
 export const RUN = `test_${Date.now().toString(36)}`;
 
 /** Crée un utilisateur de test en base et retourne un client HTTP authentifié */

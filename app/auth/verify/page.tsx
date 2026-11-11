@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MailCheckIcon, PhoneIcon } from 'lucide-react';
-import { SUPPORT_PHONE } from '@/lib/server/magic-link-email';
+import { SUPPORT_NAME, SUPPORT_PHONE } from '@/lib/constants/support';
 
 const STEPS = [
   'Ouvrez votre messagerie (Gmail, Orange, Free, Outlook…).',
@@ -48,7 +48,7 @@ export default function VerifyRequestPage() {
         <div className="flex items-start gap-3 text-base">
           <PhoneIcon className="mt-0.5 h-5 w-5 shrink-0 text-gold-700" />
           <p>
-            Besoin d’aide ? Appelez Jérôme au <strong>{SUPPORT_PHONE}</strong>.
+            Besoin d’aide ? Appelez {SUPPORT_NAME} au <strong>{SUPPORT_PHONE}</strong>.
           </p>
         </div>
       </div>

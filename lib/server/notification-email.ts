@@ -1,5 +1,5 @@
 import { escapeHtml } from './email';
-import { SUPPORT_PHONE } from './magic-link-email';
+import { SUPPORT_NAME, SUPPORT_PHONE } from '@/lib/constants/support';
 
 /** Email de notification simple : un titre, une phrase, un bouton, le numéro d'aide */
 export function renderNotificationEmail(params: {
@@ -22,9 +22,9 @@ export function renderNotificationEmail(params: {
 <h1 style="font-size:24px;margin:0 0 14px 0;">${escapeHtml(title)}</h1>
 <p style="font-size:18px;line-height:1.5;margin:0;">${intro}</p>
 ${button}
-<div style="background:#fdf7e8;border-radius:12px;padding:14px 16px;font-size:16px;margin-top:8px;">Un souci ? Appelez Jérôme au <strong>${SUPPORT_PHONE}</strong>.</div>
+<div style="background:#fdf7e8;border-radius:12px;padding:14px 16px;font-size:16px;margin-top:8px;">Un souci ? Appelez ${SUPPORT_NAME} au <strong>${SUPPORT_PHONE}</strong>.</div>
 </td></tr></table></td></tr></table></body></html>`;
 
-  const text = [title, '', intro.replace(/<[^>]+>/g, ''), url ? `\n${buttonLabel} : ${url}` : '', `\nUn souci ? Appelez Jérôme au ${SUPPORT_PHONE}.`].join('\n');
+  const text = [title, '', intro.replace(/<[^>]+>/g, ''), url ? `\n${buttonLabel} : ${url}` : '', `\nUn souci ? Appelez ${SUPPORT_NAME} au ${SUPPORT_PHONE}.`].join('\n');
   return { html, text };
 }

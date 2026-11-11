@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Phone, MessageCircle } from 'lucide-react';
+import { SUPPORT_NAME, SUPPORT_PHONE, SUPPORT_PHONE_LINK } from '@/lib/constants/support';
 
 export function SupportBanner() {
   const [isVisible, setIsVisible] = useState(false);
@@ -40,13 +41,13 @@ export function SupportBanner() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs text-blue-900 leading-relaxed">
-              <span className="font-medium">Bug ou question ?</span> Contactez Jérôme :{' '}
+              <span className="font-medium">Bug ou question ?</span> Contactez {SUPPORT_NAME} :{' '}
               <a 
-                href="tel:0687563440" 
+                href={`tel:${SUPPORT_PHONE_LINK}`}
                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-semibold hover:underline"
               >
                 <Phone className="h-3 w-3" />
-                06 87 56 34 40
+                {SUPPORT_PHONE}
               </a>
             </p>
           </div>
