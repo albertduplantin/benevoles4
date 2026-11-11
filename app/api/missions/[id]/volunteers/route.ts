@@ -6,7 +6,7 @@ import type { Mission } from '@/lib/db';
 import { handle, json, requireUser, HttpError } from '@/lib/server/api';
 import { toMissionClient } from '@/lib/server/mappers';
 import { escapeHtml, sendEmail } from '@/lib/server/email';
-import { createNotification, getMission, notifyPromoted, registerVolunteer, unregisterVolunteer } from '@/lib/server/missions';
+import { areNotificationsPaused, createNotification, getMission, markNotified, notifyPromoted, registerVolunteer, unregisterVolunteer } from '@/lib/server/missions';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -23,6 +23,8 @@ async function requireManager(missionId: string) {
 
 /** Prévient le bénévole (in-app, et email s'il l'a activé) d'une affectation ou d'un retrait */
 async function notifyVolunteer(volunteerId: string, mission: Mission, assigned: boolean) {
+  // Pause décidée par l'administrateur : rien ne part, l'affectation reste « à prévenir »
+  if (await areNotificationsPaused()) return;
   const volunteer = await db.query.users.findFirst({ where: eq(users.id, volunteerId) });
   if (!volunteer) return;
 
@@ -53,6 +55,8 @@ async function notifyVolunteer(volunteerId: string, mission: Mission, assigned: 
       </div>`,
     });
   }
+  // Le bénévole est prévenu : il ne figurera pas dans un futur récapitulatif
+  if (assigned) await markNotified(mission.id, volunteerId);
 }
 
 /** POST /api/missions/[id]/volunteers : affecte un bénévole (admin / responsable de la catégorie) */

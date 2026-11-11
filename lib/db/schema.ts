@@ -162,6 +162,7 @@ export const adminSettings = pgTable('admin_settings', {
   festivalEndDate: timestamp('festival_end_date'),
   registrationsBlocked: boolean('registrations_blocked').notNull().default(false),
   registrationBlockedMessage: text('registration_blocked_message').default(''),
+  notificationsPaused: boolean('notifications_paused').notNull().default(false),
   updatedAt: timestamp('updated_at'),
   updatedBy: text('updated_by'),
 });
@@ -193,6 +194,20 @@ export const loginAttempts = pgTable('login_attempts', {
   ip: text('ip'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+/**
+ * Affectations dont le bénévole a déjà été prévenu (permet d'envoyer plus tard un récapitulatif
+ * uniquement à ceux qui ne l'ont pas encore été)
+ */
+export const assignmentNotices = pgTable(
+  'assignment_notices',
+  {
+    missionId: text('mission_id').notNull().references(() => missions.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    notifiedAt: timestamp('notified_at').notNull().defaultNow(),
+  },
+  (n) => [primaryKey({ columns: [n.missionId, n.userId] })]
+);
 
 /**
  * Rappels de mission déjà envoyés (un par bénévole et par mission)

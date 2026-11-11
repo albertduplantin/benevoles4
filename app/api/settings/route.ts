@@ -16,6 +16,7 @@ const schema = z
     festivalEndDate: z.string().datetime().nullable(),
     registrationsBlocked: z.boolean(),
     registrationBlockedMessage: z.string(),
+    notificationsPaused: z.boolean(),
   })
   .partial();
 

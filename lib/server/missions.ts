@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm';
-import { db, missions, users, adminSettings, categoryResponsibles, notifications } from '@/lib/db';
+import { db, missions, users, adminSettings, categoryResponsibles, notifications, assignmentNotices } from '@/lib/db';
 import type { Mission } from '@/lib/db';
 import { HttpError, newId } from './api';
 import { escapeHtml, isTestAddress, sendEmail } from './email';
@@ -12,10 +12,26 @@ export async function getSettings() {
     festivalStartDate: row?.festivalStartDate ?? undefined,
     festivalEndDate: row?.festivalEndDate ?? undefined,
     registrationsBlocked: row?.registrationsBlocked ?? false,
+    notificationsPaused: row?.notificationsPaused ?? false,
     registrationBlockedMessage: row?.registrationBlockedMessage ?? '',
     updatedAt: row?.updatedAt ?? undefined,
     updatedBy: row?.updatedBy ?? undefined,
   };
+}
+
+/** Vrai si l'administrateur a suspendu les notifications aux bénévoles */
+export async function areNotificationsPaused(): Promise<boolean> {
+  return (await getSettings()).notificationsPaused;
+}
+
+/** Note que le bénévole a été prévenu de son inscription à cette mission */
+export async function markNotified(missionId: string, userId: string): Promise<void> {
+  await db.insert(assignmentNotices).values({ missionId, userId }).onConflictDoNothing();
+}
+
+/** Oublie la notification : si le bénévole est de nouveau inscrit plus tard, il sera à prévenir */
+export async function clearNotice(missionId: string, userId: string): Promise<void> {
+  await db.delete(assignmentNotices).where(and(eq(assignmentNotices.missionId, missionId), eq(assignmentNotices.userId, userId)));
 }
 
 export async function getMission(missionId: string): Promise<Mission> {
@@ -139,6 +155,7 @@ export async function registerVolunteer(
     .returning();
 
   if (!updated) throw registrationError(await getMission(missionId), userId);
+  if (!opts.byAdmin) await markNotified(missionId, userId);
   return updated;
 }
 
@@ -169,6 +186,7 @@ export async function unregisterVolunteer(
     })
     .where(eq(missions.id, missionId));
 
+  await clearNotice(missionId, userId);
   const promoted = await rebalance(missionId);
   return { mission: await getMission(missionId), promoted };
 }
@@ -219,6 +237,7 @@ export async function createNotification(params: {
 
 /** Notifie (in-app + email) les admins et responsables de la catégorie d'une nouvelle inscription */
 export async function notifyRegistration(mission: Mission, volunteerId: string): Promise<void> {
+  if (await areNotificationsPaused()) return; // pause décidée par l'administrateur
   const volunteer = await db.query.users.findFirst({ where: eq(users.id, volunteerId) });
   const volunteerName = `${volunteer?.firstName ?? ''} ${volunteer?.lastName ?? ''}`.trim() || 'Bénévole';
 
@@ -289,6 +308,7 @@ const dateTimeFr = new Intl.DateTimeFormat('fr-FR', {
 /** Prévient les bénévoles passés de la liste d'attente à « inscrit » (notification + email) */
 export async function notifyPromoted(mission: Mission, promotedIds: string[]): Promise<void> {
   if (promotedIds.length === 0) return;
+  if (await areNotificationsPaused()) return; // pause : ils figureront dans le récapitulatif envoyé plus tard
   const base = process.env.NEXT_PUBLIC_APP_BASE_URL ?? '';
   const when = mission.startDate ? ` le ${dateTimeFr.format(mission.startDate)}` : '';
 
@@ -314,5 +334,6 @@ export async function notifyPromoted(mission: Mission, promotedIds: string[]): P
         console.error('Promotion email error:', e)
       );
     }
+    await markNotified(mission.id, userId);
   }
 }

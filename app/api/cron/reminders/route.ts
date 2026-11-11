@@ -2,7 +2,7 @@ import { and, between, eq, inArray, sql } from 'drizzle-orm';
 import { db, missions, reminders, users } from '@/lib/db';
 import { json } from '@/lib/server/api';
 import { escapeHtml, sendEmail } from '@/lib/server/email';
-import { createNotification } from '@/lib/server/missions';
+import { areNotificationsPaused, createNotification } from '@/lib/server/missions';
 import { renderNotificationEmail } from '@/lib/server/notification-email';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +20,9 @@ export async function GET(request: Request) {
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return json({ error: 'Unauthorized' }, 401);
   }
+
+  // Pause décidée par l'administrateur : aucun rappel ne part (ils reprendront à la réactivation)
+  if (await areNotificationsPaused()) return json({ paused: true, remindersSent: 0 });
 
   const now = new Date();
   const horizon = new Date(now.getTime() + 30 * 3600_000);

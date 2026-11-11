@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { RUN, anonymous, createUser, cleanup, slot, sql } from './helpers.mjs';
 
 let admin, resp, v1, v2, v3, mail;
+let originalSettings;
 const mk = (suffix, body) => ({
   title: `${RUN} ${suffix}`, description: 'Mission de test', category: `${RUN}_cat`, type: 'scheduled',
   location: 'Salle test', maxVolunteers: 2, status: 'published', ...slot(0), ...body,
@@ -10,6 +11,9 @@ const mk = (suffix, body) => ({
 
 before(async () => {
   admin = await createUser('admin', 'admin');
+  // Base de test : on part d'un état connu (inscriptions ouvertes, notifications actives), puis on restaure
+  originalSettings = (await admin.client.get('/api/settings')).data.settings;
+  await admin.client.put('/api/settings', { registrationsBlocked: false, notificationsPaused: false });
   resp = await createUser('resp', 'category_responsible');
   v1 = await createUser('v1');
   v2 = await createUser('v2');
@@ -18,7 +22,17 @@ before(async () => {
   const cat = await admin.client.post('/api/categories', { value: `${RUN}_cat`, label: 'Catégorie test', group: 'Test', order: 0 });
   assert.equal(cat.status, 201, JSON.stringify(cat.data));
 });
-after(cleanup);
+after(async () => {
+  // restaure les réglages d'avant les tests, quels qu'ils aient été
+  if (originalSettings) {
+    await admin.client.put('/api/settings', {
+      registrationsBlocked: originalSettings.registrationsBlocked,
+      registrationBlockedMessage: originalSettings.registrationBlockedMessage ?? '',
+      notificationsPaused: originalSettings.notificationsPaused,
+    });
+  }
+  await cleanup();
+});
 
 test('sans connexion : API protégées, accès public limité', async () => {
   assert.equal((await anonymous.get('/api/missions')).status, 401);
@@ -322,4 +336,89 @@ test('créneaux en série : création groupée, droits et validations', async ()
   assert.equal((await admin.client.post('/api/missions/series', reversed)).status, 400, 'créneau inversé refusé');
   const tooMany = { ...body, slots: Array.from({ length: 101 }, () => slots[0]) };
   assert.equal((await admin.client.post('/api/missions/series', tooMany)).status, 400, 'plus de 100 créneaux refusé');
+});
+
+test('pause des notifications : rien ne part, les bénévoles restent à prévenir, un seul récapitulatif ensuite', async () => {
+  const a = await createUser('pauseA');
+  const b = await createUser('pauseB');
+  const c = await createUser('pauseC');
+  const m1 = (await admin.client.post('/api/missions', mk('pause1', { maxVolunteers: 4, ...slot(11) }))).data.mission;
+  const m2 = (await admin.client.post('/api/missions', mk('pause2', { maxVolunteers: 4, ...slot(12) }))).data.mission;
+  const mSolo = (await admin.client.post('/api/missions', mk('pauseSolo', { maxVolunteers: 1, ...slot(13) }))).data.mission;
+  const wait = () => new Promise((r) => setTimeout(r, 2500));
+  const notifs = async (u) => (await u.client.get('/api/notifications')).data.notifications;
+
+  assert.equal((await admin.client.put('/api/settings', { notificationsPaused: true })).status, 200);
+  assert.equal((await admin.client.get('/api/notifications/pending')).data.paused, true);
+  const before = (await admin.client.get('/api/notifications/pending')).data;
+
+  // affectations par l'admin pendant la pause : aucune notification
+  await admin.client.post(`/api/missions/${m1.id}/volunteers`, { userId: a.id });
+  await admin.client.post(`/api/missions/${m2.id}/volunteers`, { userId: a.id });
+  await admin.client.post(`/api/missions/${m1.id}/volunteers`, { userId: b.id });
+  // inscription par le bénévole lui-même : il le sait, il n'est pas « à prévenir »
+  assert.equal((await c.client.post(`/api/missions/${m2.id}/register`)).status, 200);
+  // promotion depuis la liste d'attente pendant la pause : pas de message, à prévenir
+  await a.client.post(`/api/missions/${mSolo.id}/register`);
+  assert.equal((await b.client.post(`/api/missions/${mSolo.id}/register`)).data.onWaitlist, true);
+  assert.equal((await a.client.del(`/api/missions/${mSolo.id}/register`)).status, 200);
+  await wait();
+
+  for (const u of [a, b, c]) {
+    const list = await notifs(u);
+    assert.equal(list.filter((n) => ['new_assignment', 'mission_cancellation'].includes(n.type)).length, 0, 'aucune notification pendant la pause');
+  }
+  const adminNotifs = await notifs(admin);
+  assert.equal(adminNotifs.some((n) => n.missionId === m2.id && n.type === 'volunteer_registration'), false, 'pas de notification aux responsables pendant la pause');
+
+  // à prévenir : a (2 missions), b (m1 + promotion de mSolo) ; pas c (inscrit lui-même)
+  const pending = (await admin.client.get('/api/notifications/pending')).data;
+  assert.equal(pending.volunteers - before.volunteers, 2, `bénévoles à prévenir : +${pending.volunteers - before.volunteers}`);
+  assert.equal(pending.assignments - before.assignments, 4);
+
+  // sécurité : seuls les admins accèdent à ces routes
+  assert.equal((await a.client.get('/api/notifications/pending')).status, 403);
+  assert.equal((await a.client.post('/api/notifications/pending', { action: 'send' })).status, 403);
+
+  // récapitulatif : UN message par bénévole, avec toutes ses missions
+  let remaining = 1;
+  while (remaining > 0) {
+    const r = await admin.client.post('/api/notifications/pending', { action: 'send', limit: 20 });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal(r.data.failed, 0);
+    remaining = r.data.remaining;
+  }
+  const aRecap = (await notifs(a)).filter((n) => n.type === 'assignments_recap');
+  const bRecap = (await notifs(b)).filter((n) => n.type === 'assignments_recap');
+  assert.equal(aRecap.length, 1, 'un seul récapitulatif pour a');
+  assert.equal(bRecap.length, 1, 'un seul récapitulatif pour b');
+  assert.match(aRecap[0].message, /2 missions/);
+  assert.equal((await notifs(c)).filter((n) => n.type === 'assignments_recap').length, 0, 'c n est pas concerné');
+
+  // plus personne à prévenir ; un second envoi ne crée aucun doublon
+  assert.equal((await admin.client.get('/api/notifications/pending')).data.volunteers, before.volunteers);
+  const again = await admin.client.post('/api/notifications/pending', { action: 'send', limit: 20 });
+  assert.equal((await notifs(a)).filter((n) => n.type === 'assignments_recap').length, 1, 'pas de doublon');
+  assert.equal(again.data.sent, 0);
+
+  // réactivation : la prochaine affectation prévient tout de suite, et n'est pas « à prévenir »
+  assert.equal((await admin.client.put('/api/settings', { notificationsPaused: false })).status, 200);
+  const m3 = (await admin.client.post('/api/missions', mk('pause3', { maxVolunteers: 4, ...slot(14) }))).data.mission;
+  await admin.client.post(`/api/missions/${m3.id}/volunteers`, { userId: b.id });
+  await wait();
+  assert.ok((await notifs(b)).some((n) => n.missionId === m3.id && n.type === 'new_assignment'), 'notification immédiate une fois réactivées');
+  assert.equal((await admin.client.get('/api/notifications/pending')).data.volunteers, before.volunteers, 'rien à prévenir');
+});
+
+test('pause des notifications : un bénévole retiré pendant la pause n est pas prévenu', async () => {
+  const d = await createUser('pauseD');
+  const m = (await admin.client.post('/api/missions', mk('pause4', { maxVolunteers: 3, ...slot(15) }))).data.mission;
+  await admin.client.put('/api/settings', { notificationsPaused: true });
+  const base = (await admin.client.get('/api/notifications/pending')).data.volunteers;
+  await admin.client.post(`/api/missions/${m.id}/volunteers`, { userId: d.id });
+  assert.equal((await admin.client.get('/api/notifications/pending')).data.volunteers, base + 1);
+  // l'admin change d'avis avant d'avoir notifié : plus rien à prévenir pour d
+  await admin.client.del(`/api/missions/${m.id}/volunteers`, { userId: d.id });
+  assert.equal((await admin.client.get('/api/notifications/pending')).data.volunteers, base, 'changement d avis : plus en attente');
+  await admin.client.put('/api/settings', { notificationsPaused: false });
 });

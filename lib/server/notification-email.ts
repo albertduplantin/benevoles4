@@ -7,8 +7,12 @@ export function renderNotificationEmail(params: {
   intro: string;
   buttonLabel?: string;
   url?: string;
+  /** Bloc HTML affiché sous le texte d'introduction (ex. liste de missions) */
+  bodyHtml?: string;
+  /** Version texte du bloc ci-dessus (clients mail sans HTML) */
+  bodyText?: string;
 }) {
-  const { title, intro, buttonLabel, url } = params;
+  const { title, intro, buttonLabel, url, bodyHtml = '', bodyText = '' } = params;
   const button =
     buttonLabel && url
       ? `<p style="text-align:center;margin:28px 0;"><a href="${escapeHtml(url)}" style="display:inline-block;background:#ebbb4f;color:#121110;font-size:19px;font-weight:bold;text-decoration:none;padding:16px 28px;border-radius:12px;">${escapeHtml(buttonLabel)}</a></p>`
@@ -21,10 +25,12 @@ export function renderNotificationEmail(params: {
 <tr><td style="padding:28px;">
 <h1 style="font-size:24px;margin:0 0 14px 0;">${escapeHtml(title)}</h1>
 <p style="font-size:18px;line-height:1.5;margin:0;">${intro}</p>
+${bodyHtml}
 ${button}
 <div style="background:#fdf7e8;border-radius:12px;padding:14px 16px;font-size:16px;margin-top:8px;">Un souci ? Appelez ${SUPPORT_NAME} au <strong>${SUPPORT_PHONE}</strong>.</div>
 </td></tr></table></td></tr></table></body></html>`;
 
-  const text = [title, '', intro.replace(/<[^>]+>/g, ''), url ? `\n${buttonLabel} : ${url}` : '', `\nUn souci ? Appelez ${SUPPORT_NAME} au ${SUPPORT_PHONE}.`].join('\n');
+  const text = [title, '', intro.replace(/<[^>]+>/g, ''), bodyText ? `
+${bodyText}` : '', url ? `\n${buttonLabel} : ${url}` : '', `\nUn souci ? Appelez ${SUPPORT_NAME} au ${SUPPORT_PHONE}.`].join('\n');
   return { html, text };
 }

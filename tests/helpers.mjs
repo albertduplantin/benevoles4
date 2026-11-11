@@ -14,6 +14,10 @@ export const sql = neon(process.env.DATABASE_URL);
 
 // Garde-fou : les tests créent des comptes et changent des réglages globaux (inscriptions ouvertes/fermées).
 // Ils ne doivent pas tourner sur une base qui contient de vrais utilisateurs.
+if (process.env.DATABASE_URL.includes('ep-bitter-credit-agw7unej') && !process.env.I_KNOW_THIS_IS_PRODUCTION) {
+  console.error('\n⛔ Tests annulés : DATABASE_URL pointe vers la base de PRODUCTION.\nUtilisez une branche Neon de test (fichier .env.test, voir CLAUDE.md).\n');
+  process.exit(1);
+}
 const realUsers = (await sql`select count(*)::int c from users where email not like '%@test.invalid'`)[0].c;
 if (realUsers > 3 && !process.env.ALLOW_TESTS_ON_REAL_DB) {
   console.error(

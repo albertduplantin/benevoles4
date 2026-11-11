@@ -54,3 +54,6 @@ next-env.d.ts
 
 # sauvegardes locales de la base (données personnelles)
 backups/
+
+# base de test (chaîne de connexion)
+.env.test

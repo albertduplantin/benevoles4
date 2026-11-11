@@ -21,6 +21,7 @@ import { InstallPWAButton } from '@/components/features/pwa/install-pwa-button';
 import { ResponsibleCategoriesBanner } from '@/components/features/category-responsibles/responsible-categories-banner';
 import { PostFestivalReport } from '@/components/features/admin/post-festival-report';
 import { RegistrationControl } from '@/components/features/admin/registration-control';
+import { NotificationControl } from '@/components/features/admin/notification-control';
 import { ALL_CATEGORIES_WITH_LABELS } from '@/lib/constants/mission-categories';
 import { getGroupedCategories } from '@/lib/api/categories';
 import { MissionCategoryClient } from '@/types/category';
@@ -725,6 +726,7 @@ export default function DashboardOverviewPage() {
           {/* Contrôle des Inscriptions */}
           <div className="space-y-4">
             <RegistrationControl />
+            <NotificationControl />
           </div>
 
           {/* Rapports et Analyses */}

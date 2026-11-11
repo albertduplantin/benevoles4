@@ -6,6 +6,7 @@ export interface AdminSettings {
   festivalEndDate?: Date;
   registrationsBlocked: boolean;
   registrationBlockedMessage?: string;
+  notificationsPaused: boolean;
   updatedAt?: Date;
   updatedBy?: string;
 }
@@ -14,6 +15,7 @@ const DEFAULTS: AdminSettings = {
   autoApproveResponsibility: false,
   registrationsBlocked: false,
   registrationBlockedMessage: '',
+  notificationsPaused: false,
 };
 
 export async function getAdminSettings(): Promise<AdminSettings> {
