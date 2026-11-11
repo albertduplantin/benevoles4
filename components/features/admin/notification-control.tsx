@@ -179,7 +179,7 @@ export function NotificationControl() {
             {state.volunteers > 0 ? (
               <p className="mt-1 text-sm text-gray-600">
                 <strong>{plural(state.volunteers, 'bénévole', 'bénévoles')}</strong> ({plural(state.assignments, 'affectation', 'affectations')})
-                n’a{state.volunteers > 1 ? 'ont' : ''} pas encore reçu de message. Chacun recevra{' '}
+                {state.volunteers > 1 ? 'n’ont' : 'n’a'} pas encore reçu de message. Chacun recevra{' '}
                 <strong>un seul email</strong> avec toutes ses missions à jour ; les nouvelles y sont signalées.
               </p>
             ) : (
