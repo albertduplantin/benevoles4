@@ -28,7 +28,8 @@ const monthFormat = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
 const weekdayFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
 const timeFormat = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
-const dayLongFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+const shortDayFormat = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+const dayLongFormat =new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /** « Aujourd'hui », « Demain » ou « Mardi 21 octobre » */
 function relativeDay(date: Date): string {
@@ -395,7 +396,10 @@ function MissionsContent() {
                       <li className="flex items-center gap-2">
                         <ClockIcon className="h-4 w-4 shrink-0" />
                         {timeFormat.format(mission.startDate)}
-                        {mission.endDate && ` – ${timeFormat.format(mission.endDate)}`}
+                        {mission.endDate &&
+                          (dayKey(mission.endDate) === dayKey(mission.startDate)
+                            ? ` – ${timeFormat.format(mission.endDate)}`
+                            : ` → ${shortDayFormat.format(mission.endDate)} à ${timeFormat.format(mission.endDate)}`)}
                       </li>
                     )}
                     <li className="flex items-center gap-2">

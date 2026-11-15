@@ -16,7 +16,8 @@ try {
     })).data.mission;
 
   // créées volontairement dans le désordre
-  const late = await make('C-tard', slot(9));
+  const lateSlot = slot(9);
+  const late = await make('C-tard', { ...lateSlot, endDate: new Date(Date.parse(lateSlot.endDate) + 2 * 86400000).toISOString() }); // sur 3 jours
   const early = await make('A-tot', slot(3, 9));
   const sameDay = await make('B-meme-jour', slot(3, 15));
   const past = await make('Z-passee', slot(5));
@@ -41,7 +42,13 @@ try {
   if (order.join() !== 'A-tot,B-meme-jour,C-tard,D-continue') throw new Error(`ordre inattendu : ${order.join(', ')}`);
   console.log('✔ ordre chronologique, sans date à la fin, terminée masquée :', order.join(' > '));
 
-  const headings = await page.locator('section h2').allInnerTexts();
+  const lateCard = await page.locator('article', { hasText: 'C-tard' }).innerText();
+  const earlyCard = await page.locator('article', { hasText: 'A-tot' }).innerText();
+  if (!lateCard.includes('→')) throw new Error('la date de fin d’une mission sur plusieurs jours n’est pas affichée');
+  if (earlyCard.includes('→')) throw new Error('une mission d’un seul jour ne doit pas afficher de date de fin');
+  console.log('✔ mission sur plusieurs jours : date de fin affichée (« → »), pas pour un seul jour');
+
+  const headings =await page.locator('section h2').allInnerTexts();
   if (headings.length !== 3) throw new Error(`3 titres attendus (2 jours + sans date), reçu : ${headings.join(' | ')}`);
   if (!/sans date/i.test(headings[2])) throw new Error('titre « sans date » absent');
   console.log('✔ un titre par jour :', headings.join(' | '));
