@@ -44,7 +44,8 @@ function relativeDay(date: Date): string {
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
 /** Mission terminée (fin, ou début si pas d'heure de fin, déjà passé) ; sans date = jamais passée */
-function isPast(m: { startDate?: Date; endDate?: Date }): boolean {
+function isPast(m: { startDate?: Date; endDate?: Date; status?: string }): boolean {
+  if (m.status === 'completed') return true;
   const end = m.endDate ?? m.startDate;
   return !!end && end.getTime() < Date.now();
 }
@@ -295,17 +296,15 @@ function MissionsContent() {
             Il manque des bénévoles
           </button>
         )}
-        {pastCount > 0 && (
-          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={showPast}
-              onChange={(e) => setShowPast(e.target.checked)}
-              className="h-5 w-5 accent-[#ebbb4f]"
-            />
-            Afficher les missions passées ({pastCount})
-          </label>
-        )}
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showPast}
+            onChange={(e) => setShowPast(e.target.checked)}
+            className="h-5 w-5 accent-[#ebbb4f]"
+          />
+          Afficher les missions terminées ({pastCount}), en fin de liste
+        </label>
         {categories.length > 1 && (
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Catégories">
             {[null, ...categories].map((c) => {
@@ -346,7 +345,7 @@ function MissionsContent() {
           {groups.map((group, gi) => (
           <section key={group.key} aria-label={group.label}>
             {group.past && !groups[gi - 1]?.past && (
-              <p className="mb-6 border-t pt-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Missions passées</p>
+              <p className="mb-6 border-t pt-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Missions terminées</p>
             )}
             <h2 className="mb-3 font-display text-xl font-semibold">{group.label}</h2>
             <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${group.past ? 'opacity-70' : ''}`}>

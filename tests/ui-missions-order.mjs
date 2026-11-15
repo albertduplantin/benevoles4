@@ -39,18 +39,18 @@ try {
 
   const order = await titles();
   if (order.join() !== 'A-tot,B-meme-jour,C-tard,D-continue') throw new Error(`ordre inattendu : ${order.join(', ')}`);
-  console.log('✔ ordre chronologique, sans date à la fin, passée masquée :', order.join(' > '));
+  console.log('✔ ordre chronologique, sans date à la fin, terminée masquée :', order.join(' > '));
 
   const headings = await page.locator('section h2').allInnerTexts();
   if (headings.length !== 3) throw new Error(`3 titres attendus (2 jours + sans date), reçu : ${headings.join(' | ')}`);
   if (!/sans date/i.test(headings[2])) throw new Error('titre « sans date » absent');
   console.log('✔ un titre par jour :', headings.join(' | '));
 
-  await page.getByLabel(/afficher les missions passées/i).check();
+  await page.getByLabel(/afficher les missions terminées/i).check();
   const withPast = await titles();
-  if (withPast.join() !== 'A-tot,B-meme-jour,C-tard,D-continue,Z-passee') throw new Error(`avec passées : ${withPast.join(', ')}`);
-  if (!(await page.getByText('Missions passées', { exact: true }).count())) throw new Error('séparateur « Missions passées » absent');
-  console.log('✔ case cochée : la mission passée apparaît tout à la fin');
+  if (withPast.join() !== 'A-tot,B-meme-jour,C-tard,D-continue,Z-passee') throw new Error(`avec terminées : ${withPast.join(', ')}`);
+  if (!(await page.getByText('Missions terminées', { exact: true }).count())) throw new Error('séparateur « Missions passées » absent');
+  console.log('✔ case cochée : la mission terminée apparaît tout à la fin');
 } catch (error) {
   fail(error.message);
 } finally {
