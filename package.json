@@ -14,7 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "test:api": "node --env-file=.env.local --env-file-if-exists=.env.test --test --test-reporter=spec tests/api.test.mjs",
-    "test:ui": "node --env-file=.env.local --env-file-if-exists=.env.test tests/ui.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-onboarding.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-mobile-menu.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-next-mission.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-exports.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-notification-pause.mjs",
+    "test:ui": "node --env-file=.env.local --env-file-if-exists=.env.test tests/ui.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-onboarding.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-mobile-menu.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-next-mission.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-exports.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-notification-pause.mjs && node --env-file=.env.local --env-file-if-exists=.env.test tests/ui-missions-order.mjs",
     "backup": "node --env-file=.env.local scripts/backup-db.mjs",
     "test:responsive": "node --env-file=.env.local --env-file-if-exists=.env.test tests/responsive.mjs",
     "test:perf": "node --env-file=.env.local --env-file-if-exists=.env.test tests/perf.mjs",

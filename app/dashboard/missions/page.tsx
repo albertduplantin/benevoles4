@@ -40,6 +40,15 @@ function relativeDay(date: Date): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/** Clé de jour locale (pour regrouper les missions d'un même jour) */
+const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+/** Mission terminée (fin, ou début si pas d'heure de fin, déjà passé) ; sans date = jamais passée */
+function isPast(m: { startDate?: Date; endDate?: Date }): boolean {
+  const end = m.endDate ?? m.startDate;
+  return !!end && end.getTime() < Date.now();
+}
+
 /** Moins de 24 h avant le début (la désinscription simple n'est plus possible) */
 function startsSoon(mission: { startDate?: Date }): boolean {
   if (!mission.startDate) return false;
@@ -84,6 +93,7 @@ function MissionsContent() {
   const [category, setCategory] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [needsOnly, setNeedsOnly] = useState(false);
+  const [showPast, setShowPast] = useState(false);
 
   const fetchMissions = useCallback(async () => {
     try {
@@ -152,15 +162,40 @@ function MissionsContent() {
     );
   }, [missions, userId]);
 
+  const pastCount = useMemo(() => missions.filter(isPast).length, [missions]);
+
+  /** Ordre : à venir (du plus proche au plus lointain), puis sans date, puis (si coché) les passées */
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return missions.filter(
-      (m) =>
-        (!category || m.category === category) &&
-        (!needsOnly || (m.status !== 'full' && (m.isUrgent || m.volunteers.length / m.maxVolunteers < 0.6))) &&
-        (!q || `${m.title} ${m.location} ${m.category}`.toLowerCase().includes(q))
-    );
-  }, [missions, category, query, needsOnly]);
+    const rank = (m: MissionClient) => (isPast(m) ? 2 : m.startDate ? 0 : 1);
+    return missions
+      .filter(
+        (m) =>
+          (showPast || !isPast(m)) &&
+          (!category || m.category === category) &&
+          (!needsOnly || (m.status !== 'full' && (m.isUrgent || m.volunteers.length / m.maxVolunteers < 0.6))) &&
+          (!q || `${m.title} ${m.location} ${m.category}`.toLowerCase().includes(q))
+      )
+      .sort(
+        (a, b) =>
+          rank(a) - rank(b) ||
+          (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0) ||
+          a.title.localeCompare(b.title, 'fr')
+      );
+  }, [missions, category, query, needsOnly, showPast]);
+
+  /** Un titre par jour ; les missions sans date et les passées ont leurs propres blocs */
+  const groups = useMemo(() => {
+    const result: { key: string; label: string; past: boolean; items: MissionClient[] }[] = [];
+    for (const m of visible) {
+      const past = isPast(m);
+      const key = m.startDate ? `${past ? 'p' : 'f'}-${dayKey(m.startDate)}` : 'none';
+      const last = result[result.length - 1];
+      if (last && last.key === key) last.items.push(m);
+      else result.push({ key, label: m.startDate ? relativeDay(m.startDate) : 'Missions sans date précise', past, items: [m] });
+    }
+    return result;
+  }, [visible]);
 
   if (!user) return null;
   const canCreate = user.role === 'admin' || user.role === 'category_responsible';
@@ -260,6 +295,17 @@ function MissionsContent() {
             Il manque des bénévoles
           </button>
         )}
+        {pastCount > 0 && (
+          <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showPast}
+              onChange={(e) => setShowPast(e.target.checked)}
+              className="h-5 w-5 accent-[#ebbb4f]"
+            />
+            Afficher les missions passées ({pastCount})
+          </label>
+        )}
         {categories.length > 1 && (
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Catégories">
             {[null, ...categories].map((c) => {
@@ -296,8 +342,15 @@ function MissionsContent() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {visible.map((mission) => {
+        <div className="space-y-8">
+          {groups.map((group, gi) => (
+          <section key={group.key} aria-label={group.label}>
+            {group.past && !groups[gi - 1]?.past && (
+              <p className="mb-6 border-t pt-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">Missions passées</p>
+            )}
+            <h2 className="mb-3 font-display text-xl font-semibold">{group.label}</h2>
+            <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${group.past ? 'opacity-70' : ''}`}>
+          {group.items.map((mission) => {
             const registered = !!userId && mission.volunteers.includes(userId);
             const waiting = !!userId && (mission.waitlist ?? []).includes(userId);
             const taken = mission.volunteers.length;
@@ -333,7 +386,7 @@ function MissionsContent() {
                         )}
                       </div>
                       <Link href={`/dashboard/missions/${mission.id}`} className="block">
-                        <h2 className="line-clamp-2 text-lg font-semibold leading-snug hover:underline">{mission.title}</h2>
+                        <h3 className="line-clamp-2 text-lg font-semibold leading-snug hover:underline">{mission.title}</h3>
                       </Link>
                     </div>
                   </div>
@@ -401,6 +454,9 @@ function MissionsContent() {
               </article>
             );
           })}
+            </div>
+          </section>
+          ))}
         </div>
       )}
     </div>
