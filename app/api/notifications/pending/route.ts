@@ -12,7 +12,12 @@ export const maxDuration = 60;
 export const GET = handle(async () => {
   await requireUser(['admin']);
   const [summary, settings] = await Promise.all([pendingSummary(), getSettings()]);
-  return json({ ...summary, paused: settings.notificationsPaused });
+  return json({
+    ...summary,
+    paused: settings.notificationsPaused,
+    recapSubject: settings.recapSubject,
+    recapSenderName: settings.recapSenderName,
+  });
 });
 
 const bodySchema = z.object({

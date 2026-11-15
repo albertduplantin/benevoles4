@@ -52,6 +52,25 @@ try {
   if (afterSample !== before) throw new Error(`l'exemple a marqué des bénévoles comme prévenus (${before} -> ${afterSample})`);
   console.log('✔ « M\'envoyer un exemple » : envoyé, et personne n\'est marqué comme prévenu');
 
+  // 3b. objet et expéditeur personnalisés : aperçu, enregistrement, puis exemple avec ces réglages
+  await page.locator('#recap-subject').fill('Tes missions au festival 2026 pour {nom}');
+  await page.locator('#recap-sender').fill('Dinan Festival Court Métrage');
+  if (!(await page.getByText('Tes missions au festival 2026 pour Marie Dupont').count())) throw new Error('aperçu de l’objet absent');
+  if (!(await page.getByRole('button', { name: /m.envoyer un exemple/i }).isDisabled())) throw new Error('l’exemple devrait être bloqué tant que ce n’est pas enregistré');
+  await page.getByRole('button', { name: /enregistrer l.objet/i }).click();
+  await page.getByText('Objet et expéditeur enregistrés').waitFor({ timeout: 15000 });
+  const saved = (await admin.client.get('/api/settings')).data.settings;
+  if (saved.recapSubject !== 'Tes missions au festival 2026 pour {nom}' || saved.recapSenderName !== 'Dinan Festival Court Métrage') throw new Error('objet/expéditeur non enregistrés');
+  await admin.client.put('/api/settings', { recapSubject: 'A\r\nBcc: x@y.z' });
+  if (/[\r\n]/.test((await admin.client.get('/api/settings')).data.settings.recapSubject)) throw new Error('retour à la ligne accepté dans l’objet');
+  await admin.client.put('/api/settings', { recapSubject: 'Tes missions au festival 2026 pour {nom}' });
+  await page.reload({ waitUntil: 'load' });
+  await page.locator('#recap-subject').waitFor({ timeout: 30000 });
+  if ((await page.locator('#recap-sender').inputValue()) !== 'Dinan Festival Court Métrage') throw new Error('expéditeur non rechargé');
+  await page.getByRole('button', { name: /m.envoyer un exemple/i }).click();
+  await page.getByText(/exemple envoyé/i).waitFor({ timeout: 20000 });
+  console.log('✔ objet ({nom}) et expéditeur : aperçu, enregistrement, sécurité, rechargement, exemple');
+
   // 4. réactivation : confirmation demandée, puis effet immédiat en base
   await sw.click();
   await page.getByText('Actives', { exact: true }).waitFor({ timeout: 15000 });
@@ -71,6 +90,8 @@ try {
     registrationsBlocked: original.registrationsBlocked,
     registrationBlockedMessage: original.registrationBlockedMessage ?? '',
     notificationsPaused: original.notificationsPaused,
+    recapSubject: original.recapSubject ?? '',
+    recapSenderName: original.recapSenderName ?? '',
   });
   await browser?.close();
   await cleanup();

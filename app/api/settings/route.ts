@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { db, adminSettings } from '@/lib/db';
 import { handle, json, requireUser, HttpError } from '@/lib/server/api';
 import { getSettings } from '@/lib/server/missions';
+import { cleanHeader } from '@/lib/constants/recap';
 
 /** GET /api/settings : paramètres globaux (lisibles par tout utilisateur connecté, ex. inscriptions fermées) */
 export const GET = handle(async () => {
@@ -17,6 +18,8 @@ const schema = z
     registrationsBlocked: z.boolean(),
     registrationBlockedMessage: z.string(),
     notificationsPaused: z.boolean(),
+    recapSubject: z.string().max(200).transform(cleanHeader),
+    recapSenderName: z.string().max(80).transform(cleanHeader),
   })
   .partial();
 

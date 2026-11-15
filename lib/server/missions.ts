@@ -14,6 +14,8 @@ export async function getSettings() {
     registrationsBlocked: row?.registrationsBlocked ?? false,
     notificationsPaused: row?.notificationsPaused ?? false,
     registrationBlockedMessage: row?.registrationBlockedMessage ?? '',
+    recapSubject: row?.recapSubject ?? '',
+    recapSenderName: row?.recapSenderName ?? '',
     updatedAt: row?.updatedAt ?? undefined,
     updatedBy: row?.updatedBy ?? undefined,
   };

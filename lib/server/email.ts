@@ -45,16 +45,22 @@ export async function sendEmail(params: {
   subject: string;
   html: string;
   text?: string;
+  /** Nom affiché de l'expéditeur (l'adresse, elle, reste celle du compte d'envoi) */
+  fromName?: string;
 }): Promise<boolean> {
+  const { fromName, ...message } = params;
   const recipients = Array.isArray(params.to) ? params.to : [params.to];
   if (recipients.length > 0 && recipients.every(isTestAddress)) return true; // faux envoi
   if (smtpConfigured()) {
-    await getTransport().sendMail({ from: fromAddress(), ...params });
+    const from = fromName && process.env.SMTP_USER ? { name: fromName, address: process.env.SMTP_USER } : fromAddress();
+    await getTransport().sendMail({ from, ...message });
     return true;
   }
   if (resendConfigured()) {
     resend ??= new Resend(process.env.RESEND_API_KEY);
-    const { error } = await resend.emails.send({ from: process.env.AUTH_EMAIL_FROM!, ...params });
+    const configured = process.env.AUTH_EMAIL_FROM!;
+    const address = configured.match(/<([^>]+)>/)?.[1] ?? configured;
+    const { error } = await resend.emails.send({ from: fromName ? `${fromName} <${address}>` : configured, ...message });
     if (error) throw new Error(error.message);
     return true;
   }

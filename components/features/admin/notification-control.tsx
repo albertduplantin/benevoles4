@@ -7,12 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DEFAULT_RECAP_SUBJECT, DEFAULT_SENDER_NAME, renderRecapSubject } from '@/lib/constants/recap';
 import { api } from '@/lib/api/http';
 
 interface PendingState {
   paused: boolean;
   volunteers: number;
   assignments: number;
+  recapSubject: string;
+  recapSenderName: string;
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
@@ -26,11 +30,17 @@ export function NotificationControl() {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [senderName, setSenderName] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setState(await api<PendingState>('/api/notifications/pending'));
+      const data = await api<PendingState>('/api/notifications/pending');
+      setState(data);
+      setSubject((current) => (current === '' ? data.recapSubject : current));
+      setSenderName((current) => (current === '' ? data.recapSenderName : current));
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -65,6 +75,24 @@ export function NotificationControl() {
       toast.error(error.message || 'Le réglage n’a pas pu être enregistré');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const emailDirty = !!state && (subject.trim() !== state.recapSubject || senderName.trim() !== state.recapSenderName);
+
+  const saveEmailSettings = async () => {
+    setSavingEmail(true);
+    try {
+      await api('/api/settings', { method: 'PUT', body: { recapSubject: subject, recapSenderName: senderName } });
+      toast.success('Objet et expéditeur enregistrés');
+      const data = await api<PendingState>('/api/notifications/pending');
+      setState(data);
+      setSubject(data.recapSubject);
+      setSenderName(data.recapSenderName);
+    } catch (error: any) {
+      toast.error(error.message || 'Enregistrement impossible');
+    } finally {
+      setSavingEmail(false);
     }
   };
 
@@ -187,12 +215,49 @@ export function NotificationControl() {
             )}
           </div>
 
+          <div className="space-y-3 rounded-lg bg-muted/50 p-3">
+            <div>
+              <Label htmlFor="recap-subject" className="text-sm font-semibold">Objet de l’email</Label>
+              <Input
+                id="recap-subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder={DEFAULT_RECAP_SUBJECT}
+                maxLength={200}
+                className="mt-1 bg-card"
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                Écrivez <strong>{'{nom}'}</strong> pour insérer le nom du bénévole. Aperçu :{' '}
+                <em>{renderRecapSubject(subject, 'Marie Dupont')}</em>
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="recap-sender" className="text-sm font-semibold">Nom de l’expéditeur</Label>
+              <Input
+                id="recap-sender"
+                value={senderName}
+                onChange={(e) => setSenderName(e.target.value)}
+                placeholder={DEFAULT_SENDER_NAME}
+                maxLength={80}
+                className="mt-1 bg-card"
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                Nom affiché dans la boîte mail des bénévoles. L’adresse d’envoi, elle, ne change pas.
+              </p>
+            </div>
+            <Button variant="outline" onClick={saveEmailSettings} disabled={!emailDirty || savingEmail}>
+              {savingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Enregistrer l’objet et l’expéditeur
+            </Button>
+            {emailDirty && <p className="text-xs text-amber-700">Pensez à enregistrer avant d’envoyer l’exemple ou les récapitulatifs.</p>}
+          </div>
+
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={sendSample} disabled={state.volunteers === 0 || sending}>
+            <Button variant="outline" onClick={sendSample} disabled={state.volunteers === 0 || sending || emailDirty}>
               <MailCheckIcon className="mr-2 h-4 w-4" />
               M’envoyer un exemple
             </Button>
-            <Button onClick={sendAll} disabled={state.volunteers === 0 || sending}>
+            <Button onClick={sendAll} disabled={state.volunteers === 0 || sending || emailDirty}>
               {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <SendIcon className="mr-2 h-4 w-4" />}
               Envoyer les récapitulatifs
             </Button>
@@ -209,7 +274,7 @@ export function NotificationControl() {
             </div>
           )}
           <p className="text-xs text-gray-500">
-            L’exemple est envoyé uniquement à votre adresse, sans rien marquer comme envoyé : vous pouvez le relire avant d’écrire à tout le monde.
+            L’exemple est envoyé uniquement à votre adresse, avec l’objet et l’expéditeur enregistrés, sans rien marquer comme envoyé : vous pouvez le relire avant d’écrire à tout le monde.
           </p>
         </div>
       </CardContent>

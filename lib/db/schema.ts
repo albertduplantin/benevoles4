@@ -163,6 +163,8 @@ export const adminSettings = pgTable('admin_settings', {
   registrationsBlocked: boolean('registrations_blocked').notNull().default(false),
   registrationBlockedMessage: text('registration_blocked_message').default(''),
   notificationsPaused: boolean('notifications_paused').notNull().default(false),
+  recapSubject: text('recap_subject'),
+  recapSenderName: text('recap_sender_name'),
   updatedAt: timestamp('updated_at'),
   updatedBy: text('updated_by'),
 });

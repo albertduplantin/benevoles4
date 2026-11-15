@@ -7,6 +7,8 @@ export interface AdminSettings {
   registrationsBlocked: boolean;
   registrationBlockedMessage?: string;
   notificationsPaused: boolean;
+  recapSubject?: string;
+  recapSenderName?: string;
   updatedAt?: Date;
   updatedBy?: string;
 }

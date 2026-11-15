@@ -2,7 +2,8 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db, missions, users, assignmentNotices } from '@/lib/db';
 import type { Mission } from '@/lib/db';
 import { escapeHtml, sendEmail } from './email';
-import { createNotification } from './missions';
+import { createNotification, getSettings } from './missions';
+import { renderRecapSubject } from '@/lib/constants/recap';
 import { renderNotificationEmail } from './notification-email';
 
 /**
@@ -95,6 +96,7 @@ export async function sendPendingRecaps(limit: number) {
   for (const r of rows) byUser.set(r.userId, (byUser.get(r.userId) ?? new Set()).add(r.missionId));
 
   const batch = [...byUser.entries()].slice(0, limit);
+  const settings = await getSettings();
   let sent = 0;
   let withoutEmail = 0;
   let failed = 0;
@@ -105,7 +107,13 @@ export async function sendPendingRecaps(limit: number) {
     const { person, list, html, text, count } = recap;
     try {
       if (person.email && person.emailNotifications !== false) {
-        await sendEmail({ to: person.email, subject: 'Vos missions au festival', html, text });
+        await sendEmail({
+          to: person.email,
+          subject: renderRecapSubject(settings.recapSubject, `${person.firstName} ${person.lastName}`),
+          fromName: settings.recapSenderName || undefined,
+          html,
+          text,
+        });
       } else {
         withoutEmail++;
       }
@@ -137,9 +145,12 @@ export async function sendSampleRecap(adminEmail: string) {
   const pendingIds = new Set(rows.filter((r) => r.userId === first).map((r) => r.missionId));
   const recap = await recapFor(first, pendingIds);
   if (!recap) return null;
+  // Exactement comme un vrai envoi (objet et expéditeur choisis), adressé à l'administrateur seul
+  const settings = await getSettings();
   await sendEmail({
     to: adminEmail,
-    subject: `[EXEMPLE] Vos missions au festival (pour ${recap.person.firstName} ${recap.person.lastName})`,
+    subject: renderRecapSubject(settings.recapSubject, `${recap.person.firstName} ${recap.person.lastName}`),
+    fromName: settings.recapSenderName || undefined,
     html: recap.html,
     text: recap.text,
   });
