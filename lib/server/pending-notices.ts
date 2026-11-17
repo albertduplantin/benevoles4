@@ -47,9 +47,9 @@ function buildRecap(person: { firstName: string; emailOnly: boolean | null; pers
 
   const rows = list
     .map(
-      ({ mission, isNew }) =>
+      ({ mission }) =>
         `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;font-size:16px;line-height:1.4;">
-<strong>${escapeHtml(whenFr(mission))}</strong>${isNew ? ' <span style="background:#ebbb4f;color:#121110;font-size:12px;font-weight:bold;padding:2px 8px;border-radius:999px;">Nouveau</span>' : ''}<br>
+<strong>${escapeHtml(whenFr(mission))}</strong><br>
 ${escapeHtml(mission.title)}<br><span style="color:#666;">${escapeHtml(mission.location)}</span></td></tr>`
     )
     .join('');
@@ -59,7 +59,7 @@ ${escapeHtml(mission.title)}<br><span style="color:#666;">${escapeHtml(mission.l
     title: 'Vos missions au festival',
     intro: `Bonjour ${escapeHtml(person.firstName)}, voici ${count > 1 ? `vos ${count} missions` : 'votre mission'} pour le festival. Merci pour votre aide !`,
     bodyHtml: `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;">${rows}</table>`,
-    bodyText: list.map(({ mission, isNew }) => `- ${whenFr(mission)} : ${mission.title} (${mission.location})${isNew ? ' [Nouveau]' : ''}`).join('\n'),
+    bodyText: list.map(({ mission }) => `- ${whenFr(mission)} : ${mission.title} (${mission.location})`).join('\n'),
     buttonLabel: 'Voir mes missions',
     url,
   });

@@ -208,7 +208,7 @@ export function NotificationControl() {
               <p className="mt-1 text-sm text-gray-600">
                 <strong>{plural(state.volunteers, 'bénévole', 'bénévoles')}</strong> ({plural(state.assignments, 'affectation', 'affectations')})
                 {state.volunteers > 1 ? 'n’ont' : 'n’a'} pas encore reçu de message. Chacun recevra{' '}
-                <strong>un seul email</strong> avec toutes ses missions à jour ; les nouvelles y sont signalées.
+                <strong>un seul email</strong> avec toutes ses missions à jour.
               </p>
             ) : (
               <p className="mt-1 text-sm text-gray-600">Tout le monde est à jour : personne n’est en attente d’un message.</p>
